@@ -15,7 +15,7 @@ from custom_tf_classes import WeightsTripletFinder, BiasesTripletFinder, Weights
 
 # %% Model for ECA
 
-def eca_emulator(N:int, rule=None, timesteps=1, train_triplet_id=False, activation=None):
+def eca_emulator(N:int, rule=None, timesteps=1, output_hidden=True, train_triplet_id=False, activation=None):
     """
     This model first finds the triplets, then performs a 1x1 convolution that is rule-specific.
     
@@ -27,13 +27,15 @@ def eca_emulator(N:int, rule=None, timesteps=1, train_triplet_id=False, activati
         Rule that determines the ECA evolution. Default is None.
     timesteps : int
         Number of timesteps after which the configuration is calculated. Default is 1.
+    output_hidden : bool
+        Choose to output the values of the hidden layers as well. This is useful when generating entire spacetime diagrams. Default is True.
     train_triplet_id : bool
         If True, the network is also capable of changing the weights and biases that lead to the triplet identification. Enabling this option gives more freedom to the network in the training phase. Disabling this generally makes more sense, as it is always the required first step in a 'human' approach to finding the next configuration. Default is False.
 
     Returns
     -------
     model : keras.src.engine.functional.Functional
-        Keras model object that can be used for inference, training ...
+        Keras model object that can be used for inference, training ... The output of this model is either the content of all intermediate CA configurations (if output_hidden is True), or only the final configuration (if output_hidden is False).
     """
     # model input
     inputs = Input((N,1), dtype=tf.float32)
@@ -64,13 +66,27 @@ def eca_emulator(N:int, rule=None, timesteps=1, train_triplet_id=False, activati
 
     # rinse and repeat over several timesteps
     x = inputs
-    for _ in range(timesteps):
+    if output_hidden:
+        all_configs = tf.identity(inputs)
+        for _ in range(timesteps-1):
+            x = triplet_id(x)
+            x = global_update(x)
+            all_configs = tf.concat([all_configs, x], axis=2)
         x = triplet_id(x)
         x = global_update(x)
-    outputs = Activation(activation)(x)
+        outputs = Activation(activation)(x)
+        all_configs = tf.concat([all_configs, outputs], axis=2)
+    else:
+        for _ in range(timesteps):
+            x = triplet_id(x)
+            x = global_update(x)
+        outputs = Activation(activation)(x)
 
     # sequence and return model
-    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    if output_hidden:
+        model = tf.keras.Model(inputs=inputs, outputs=[all_configs,outputs])
+    else:
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
 
 # %% Model for nuCA

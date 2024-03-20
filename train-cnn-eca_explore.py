@@ -24,17 +24,19 @@ from cnn_models import eca_emulator
 from custom_tf_classes import WeightsBiasesHistory
 
 from keras.callbacks import EarlyStopping, Callback
-from keras import regularizers
+# from keras import regularizers
+
+import time
 
 images_dir = "./figures"
 
 
 # %% Synthesise initial configurations
 
-N_train = 2**14
-N_val = 2**14
+N_train = 2**12
+N_val = 2**12
 
-N = 64
+N = 256
 
 x_train = np.random.randint(2,size=(N_train, N, 1),
                             dtype=np.int8)
@@ -51,30 +53,46 @@ print(f"ECA rule: {ECA_rule}")
 # %% Initiate CNN
 
 diagram_dims = (N,1)
-timesteps = 1
+timesteps = N//2-1
+output_hidden = True
 
-cnn = eca_emulator(N, ECA_rule, timesteps=timesteps)
+cnn = eca_emulator(N, ECA_rule, timesteps=timesteps, output_hidden=output_hidden)
 cnn.summary()
 cnn.compile()
 
 # %% make perfect predictions (labels). Save economically.
-# NB this goes SUPER fast
-
-verbose=1
-
-r_train = cnn.predict(x_train, batch_size=len(x_train), verbose=verbose).astype(np.int8)
-r_val = cnn.predict(x_val, batch_size=len(x_val), verbose=verbose).astype(np.int8)
-
-# %% Make a spacetime diagram as a sanity check
+# NB this goes SUPER fast (relatively)
 
 verbose=0
-diagram_train = x_train.copy()
-T = N//2
-for _ in range(T-1):
-    r_pred = cnn.predict(diagram_train[:,:,-1:], batch_size=N_train, verbose=verbose).astype(np.int8)
-    diagram_train = np.append(diagram_train, r_pred, axis=2)
 
-plt.imshow(diagram_train[1].T, cmap='Greys')
+t0 = time.time()
+if output_hidden:
+    all_configs_train, r_train = cnn.predict(x_train, batch_size=len(x_train), verbose=verbose)
+    all_configs_val, r_val = cnn.predict(x_val, batch_size=len(x_val), verbose=verbose)
+    all_configs_train = np.array(all_configs_train, dtype=np.int8)
+    r_train = np.array(r_train, dtype=np.int8)
+    all_configs_val = np.array(all_configs_val, dtype=np.int8)
+    r_val = np.array(r_val, dtype=np.int8)
+else:
+    r_train = cnn.predict(x_train, batch_size=len(x_train), verbose=verbose).astype(np.int8)
+    r_val = cnn.predict(x_val, batch_size=len(x_train), verbose=verbose).astype(np.int8)
+tf = time.time()
+
+print(f"N={N} cells, N_train={N_train} diagrams, T={timesteps+1} timesteps.\nTime: {round(tf-t0,2)} seconds.")
+
+# %% Make a spacetime diagram as a sanity check
+    
+verbose=True
+diagram_train = x_train.copy()
+t0 = time.time()
+
+next_configs = np.array(cnn.predict(x_train, batch_size=len(x_train), verbose=verbose)).astype(np.int8)
+
+# for next_config in next_configs:
+#     diagram_train = np.append(diagram_train, next_config, axis=2)
+
+# show_idx=420
+# plt.imshow(diagram_train[show_idx].T, cmap='Greys')
 
 # %% Now randomly re-initialise the model with random weights and biases, and try to train it to perfection.
 
