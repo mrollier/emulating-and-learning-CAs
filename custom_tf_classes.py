@@ -3,7 +3,7 @@ import tensorflow as tf
 import keras
 import numpy as np
 
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Conv1D
 from tensorflow.keras.constraints import Constraint
 from tensorflow.keras.initializers import Initializer
 from keras.callbacks import Callback
@@ -11,9 +11,26 @@ from keras.callbacks import Callback
 from utils import _base_repr
 
 
-# %% custom layers
+# %% custom Models
 
-class PeriodicConv1D(tf.keras.layers.Conv1D):
+class CustomModel(tf.keras.Model):
+    def __init__(self, base_model):
+        super(CustomModel, self).__init__()
+        self.base_model = base_model
+
+    def call(self, inputs):
+        return self.base_model(inputs)
+
+    def predict_with_hidden(self, x):
+        outputs = [x]  # Add input as the first output
+        for layer in self.base_model.layers:
+            x = layer(x)
+            outputs.append(x)
+        return outputs
+
+# %% custom Layers
+
+class PeriodicConv1D(Conv1D):
     # WARNING: copied from ChatGPT (contains bugs)
     def __init__(self, filters, kernel_size, **kwargs):
         super(PeriodicConv1D, self).__init__(filters, kernel_size, **kwargs)
