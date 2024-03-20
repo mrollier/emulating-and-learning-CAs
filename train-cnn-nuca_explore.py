@@ -35,17 +35,17 @@ np.random.seed(seed)
 # choose size and quantity. There is a virtually limitless supply.
 N_train = 2**14
 N_val = 2**14
-N = 64
+N = 127
 
 x_train = np.random.randint(2,size=(N_train, N, 1),
                             dtype=np.int8)
 x_val = np.random.randint(2, size=(N_val, N, 1),
                           dtype=np.int8)
 
-# %% Define models with 'perfect' weights and biases and calculate output of the model
+# %% Pick rules etc
 
 # pick rules
-rules = [15, 240]
+rules = [110, 30]
 
 # pick rule allocation
 # rule_alloc = np.zeros(N)
@@ -56,55 +56,68 @@ rule_alloc = np.random.randint(0,2,size=N)
 
 # initiate model and make all 'labels'
 timesteps=1
-nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False)
+output_hidden=False
+
+nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden)
 nuca_cnn.summary()
-
 nuca_cnn.compile()
-r_train = nuca_cnn.predict(x_train, batch_size=N_train)
-r_val = nuca_cnn.predict(x_val, batch_size=N_val)
 
-# %% Output content of hidden layers
-
-# Does not work yet properly yet. Check out TensorBoard!
-
-# r_train, hidden_outputs = predict_with_hidden(nuca_cnn, x_train, output_hidden=True)
-
-# submodel = tf.keras.Model(inputs=nuca_cnn.input,
-#                           outputs=nuca_cnn.layers[1].output)
-
-# r_triplet_id = submodel.predict(x_train, batch_size=N_train)
+t0 = time.time()
+for _ in range(127):
+    r_train = nuca_cnn.predict(x_train, batch_size=N_train)
+tf = time.time()
+print(tf-t0)
+# all_configs_val, r_val = nuca_cnn.predict(x_val, batch_size=N_val)
 
 # %% Make and show a couple of spacetime diagrams
 
-# safety switch (because this can take a while)
-MAKE_AGAIN = True
+timesteps=N//2-1
+output_hidden=True
 
-if MAKE_AGAIN:
+nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden)
+nuca_cnn.summary()
+nuca_cnn.compile()
 
-    T = N//2 # divide by two to avoid interference
-    previous_configs = x_train.copy()
-    diagrams = x_train.copy()
+all_configs_train, r_train = nuca_cnn.predict(x_train, batch_size=N_train)
+all_configs_val, r_val = nuca_cnn.predict(x_val, batch_size=N_val)
 
-    start_time = time.time()
-    time_array = [0]
-    for t in range(1,T):
-        print(f'Working on t={t}', end='\r')
-        new_configs = nuca_cnn.predict(previous_configs, batch_size=N_train, verbose=0)
-        diagrams = np.append(diagrams, new_configs, axis=2)
-        previous_configs = new_configs
-        time_since = time.time() - start_time
-        time_array.append(time_since)
+# %%  Is this process linear?
+timesteps = 16
+verbose=False
+start_time = time.time()
+times=[0]
 
-# %%  this process is clearly NOT linear in number of time steps! but ...
-# four times more samples ~ 4 times more time
-# four times more cells ~ 4 times more time
-# that's pretty good news: we can simulate CAs with more cells without being bothered by interference problems.
+N = 32
+N_trains = np.array([2**8, 2**9, 2**10, 2**11, 2**12, 2**13, 2**14, 2**15, 2**16, 2**17, 2**18])
 
-plt.plot(time_array)
-plt.plot([0, N//2-1], [time_array[0], time_array[-1]], 'k--')
-plt.xlabel("Timestep")
-plt.ylabel("Cumulative required time (seconds)")
-plt.title(f"{len(rules)} rules, {N} cells, {N_train} samples")
+for N_train in N_trains:
+    print(f"Working on N_train={N_train}.", end='\r')
+
+    x_train = np.random.randint(2,size=(N_train, N, 1),
+                                dtype=np.int8)
+    rule_alloc = np.random.randint(0,2,size=N)
+
+    output_hidden=True
+    nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden)
+    nuca_cnn.compile()
+
+    all_configs_train, r_train = nuca_cnn.predict(x_train, batch_size=N_train, verbose=verbose)
+
+    intermediate_time = time.time()
+    stopwatch = intermediate_time-start_time
+    times += [stopwatch]
+
+# %% Show timestep dependency of calculation
+# This is now linear, which is great news (because it used to be super-linear)
+
+times = np.array(times)
+plt.plot(N_trains, times[1:]-times[:-1])
+plt.xlabel('Number of diagrams (log)')
+plt.ylabel(f'time spent on calculating full diagrams (seconds).')
+plt.title(f"Calculation times for T={timesteps}, N={N} nuCA diagrams.")
+plt.xscale('log')
+
+plt.savefig(f"{images_dir}/nuca-diagram-calc-time_Ntrain.pdf", bbox_inches='tight')
 
 # %% Show some diagrams
 

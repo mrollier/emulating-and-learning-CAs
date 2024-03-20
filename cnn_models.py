@@ -31,6 +31,8 @@ def eca_emulator(N:int, rule=None, timesteps=1, output_hidden=True, train_triple
         Choose to output the values of the hidden layers as well. This is useful when generating entire spacetime diagrams. Default is True.
     train_triplet_id : bool
         If True, the network is also capable of changing the weights and biases that lead to the triplet identification. Enabling this option gives more freedom to the network in the training phase. Disabling this generally makes more sense, as it is always the required first step in a 'human' approach to finding the next configuration. Default is False.
+    activation : str or None or tf.keras.layers.Activation
+        The activation function for the final layer (useful for training). Default is None.
 
     Returns
     -------
@@ -91,7 +93,7 @@ def eca_emulator(N:int, rule=None, timesteps=1, output_hidden=True, train_triple
 
 # %% Model for nuCA
 
-def nuca_emulator_1D(N:int, rules, timesteps=1, train_triplet_id=False, rule_alloc=None,):
+def nuca_emulator_1D(N:int, rules, timesteps=1, output_hidden=True, train_triplet_id=False, rule_alloc=None, activation=None):
     """
     This model first finds the triplets, then evolves them according to a number of convolutions (one set of weights per rule). Then a locally connected layer picks out cell-by-cell which of the rules should apply.
 
@@ -108,16 +110,19 @@ def nuca_emulator_1D(N:int, rules, timesteps=1, train_triplet_id=False, rule_all
         Rules that can determine the nuCA evolution. May be None (if rule is unknown)
     timesteps : int
         Number of timesteps after which the configuration is calculated. Default is 1.
+    output_hidden : bool
+        Choose to output the values of the hidden layers as well. This is useful when generating entire spacetime diagrams. Default is True.
     train_triplet_id : bool
         If True, the network is also capable of changing the weights and biases that lead to the triplet identification. Enabling this option gives more freedom to the network in the training phase. Disabling this generally makes more sense, as it is always the required first step in a 'human' approach to finding the next configuration. Default is False.
     rule_alloc : (nested) list of ints or None
         List of integers corresponding to the index of the rule in param rules. If None, no perfect weights are initialised. Default is None.
+    activation : str or None or tf.keras.layers.Activation
+        The activation function for the final layer (useful for training). Default is None.
 
     Returns
     -------
     model : keras.src.engine.functional.Functional
-        Keras model object that can be used for inference, training ...
-
+        Keras model object that can be used for inference, training ... The output of this model is either the content of all intermediate CA configurations (if output_hidden is True), or only the final configuration (if output_hidden is False).
     """
     # exceptions and preprocessing
     if rule_alloc is not None:
@@ -170,14 +175,31 @@ def nuca_emulator_1D(N:int, rules, timesteps=1, train_triplet_id=False, rule_all
 
     # rinse and repeat over several timesteps
     x = inputs
-    for _ in range(timesteps):
+    if output_hidden:
+        all_configs = tf.identity(inputs)
+        for _ in range(timesteps-1):
+            x = triplet_id(x)
+            x = global_updates(x)
+            x = cell_selector(x)
+            all_configs = tf.concat([all_configs, x], axis=2)
         x = triplet_id(x)
         x = global_updates(x)
         x = cell_selector(x)
-    outputs = x
+        outputs = Activation(activation)(x)
+        all_configs = tf.concat([all_configs, outputs], axis=2)
+    else:
+        for _ in range(timesteps):
+            x = triplet_id(x)
+            x = global_updates(x)
+            x = cell_selector(x)
+        outputs = Activation(activation)(x)
 
     # sequence and return model
-    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    if output_hidden:
+        model = tf.keras.Model(inputs=inputs, outputs=[all_configs,outputs])
+    else:
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
     return model
 
 # %% other models, e.g. for larger neighbourhoods and for multiple states (which is equivalent)
