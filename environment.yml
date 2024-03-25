@@ -1,0 +1,9 @@
+name: emulating_and_learning_CAs
+dependencies:
+  - python=3.11
+  - numpy
+  - matplotlib
+  - pip
+  - pip:
+    - tensorflow==2.14.0
+    - keras==2.14.0
