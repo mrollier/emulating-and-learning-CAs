@@ -53,7 +53,7 @@ print(f"ECA rule: {ECA_rule}")
 # %% Initiate CNN
 
 diagram_dims = (N,1)
-timesteps = N//2-1
+timesteps = 1 # N//2-1
 output_hidden = True
 
 cnn = eca_emulator(N, ECA_rule, timesteps=timesteps, output_hidden=output_hidden)
