@@ -1,3 +1,4 @@
 ./figures
-./models
+./files
 ./.conda
+./data
