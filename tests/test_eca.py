@@ -19,7 +19,7 @@ dir_figs = '../figures/eca/'
 # %% test eca emulator
 
 N = 64
-rule = 42
+rule = 110
 timesteps = 1
 activation = None
 
@@ -31,7 +31,7 @@ model_perfect = ECA.model()
 
 # model with random weights and biases, and activation function (for training)
 ECA.rule = None
-ECA.activation = 'tanh'
+ECA.activation = 'tanh' # a modified sigmoid may be better
 ECA.train_triplet_id = True
 model = ECA.model()
 model.summary()
@@ -52,20 +52,44 @@ verbose = False
 r_train = model_perfect.predict(x_train, batch_size=len(x_train), verbose=verbose)
 r_val = model_perfect.predict(x_val, batch_size=len(x_val), verbose=verbose)
 
-# %% training
+# %% pretraining and training
+# TODO: can pretraining be parallellised?
+# TODO: can pretraining go in a class as well?
 
-TRAIN_AGAIN = True
+PRETRAIN = True
+TRAIN = True
+
+# pretraining params
+N_pt = 50
+batch_size_pt = 128
 
 # training params
 batch_size = 8
-epochs = 100
+epochs = 40
 learning_rate = 0.0005
 loss = 'mse'
-stopping_patience = 20
-stopping_delta = 0.0001
+stopping_patience = None # 20
+stopping_delta = None # 0.0001
 wab_callback = True
 
-if TRAIN_AGAIN:
+if PRETRAIN:
+    best_loss = np.infty
+    models = [ECA.model() for _ in range(N_pt)]
+    for i in range(N_pt):
+        print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.', end='\r')
+        current_model = models[i]
+        tr = Train1D(current_model, x_train, r_train, x_val, r_val,
+                     batch_size=batch_size_pt, epochs=1,
+                     learning_rate=learning_rate, loss=loss)
+        history = tr.train(verbose=False)
+        current_loss = history.history['loss'][0]
+        if current_loss < best_loss:
+            best_loss = current_loss
+            best_model = current_model
+    print(f'Best pretraining loss: {best_loss}.')
+    model = best_model
+
+if TRAIN:
     tr = Train1D(model, x_train, r_train, x_val, r_val,
                  batch_size=batch_size, epochs=epochs, learning_rate=learning_rate, loss=loss,stopping_patience=stopping_patience, stopping_delta=stopping_delta, wab_callback=wab_callback)
     if wab_callback:

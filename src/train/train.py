@@ -30,7 +30,7 @@ class Train1D:
         if (stopping_patience is not None and stopping_delta is None) or (stopping_patience is None and stopping_delta is not None):
             raise Exception("When using EarlyStopping, specify both stopping_patience and stopping_delta. When neither is selected, EarlyStopping is not activated.")
 
-    def train(self):
+    def train(self, verbose=True):
         self.model.compile(loss=self.loss,
                            optimizer=Adam(learning_rate=self.learning_rate),
                            metrics=['mse'])
@@ -40,7 +40,7 @@ class Train1D:
             stopping_callback = EarlyStopping(monitor='val_mse',
                                             patience=self.stopping_patience,
                                             min_delta=self.stopping_delta,
-                                            verbose = 1,
+                                            verbose = verbose,
                                             restore_best_weights=True)
             callbacks.append(stopping_callback)
         if self.wab_callback:
@@ -51,7 +51,7 @@ class Train1D:
                         self.output.astype(np.float32), # TODO: probably better as tf.float32?
                         batch_size=self.batch_size,
                         epochs=self.epochs,
-                        verbose=1,
+                        verbose=verbose,
                         validation_data=(self.input_val, self.output_val.astype(np.float32)),
                         shuffle=True,
                         callbacks=callbacks)
