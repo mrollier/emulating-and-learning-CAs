@@ -104,7 +104,7 @@ class History1D:
 
         # output array
         axs[3,0].imshow(output_example, cmap='Greys')
-        axs[3,0].set_title(f"Desired output, rule {rule}, {timesteps} timestep(s)")
+        axs[3,0].set_title(f"Desired output, rule(s) {rule}, {timesteps} timestep(s)")
 
         for i in range(4):
             for j in range(2):

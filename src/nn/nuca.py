@@ -22,6 +22,7 @@ class NucaEmulator:
     This model first finds the triplets, then performs a 1x1 convolution that is rule-specific.
     TODO: check whether biases are required. Perhaps limiting the degrees of freedom is beneficial for training.
     TODO: allow rule_alloc to change over subsequent time steps (no priority)
+    TODO: allow a framework where the rules are known, but the rule allocation is not.
     TODO: find a better initial weight distribution (cf. Leonardo Scabini?)
     TODO: find a nice way to export values of hidden layers, probably by means of a custom Model class.
     
@@ -57,11 +58,12 @@ class NucaEmulator:
         self.activation = activation
 
     def model(self):
+    # TODO: add an option for a more powerful model (e.g. with a fully-connected layer instead of the LocallyConnected1D)
     # exceptions and preprocessing
         if self.rule_alloc is not None:
             if len(self.rule_alloc) != self.N:
                 raise Exception("The parameter rule_dist should have size N.")
-        rules = np.atleast_1d(rules)
+        rules = np.atleast_1d(self.rules)
         Nrules = len(rules)
 
         # model input
