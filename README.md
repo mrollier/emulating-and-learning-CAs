@@ -14,21 +14,21 @@ This project contains classes of simple neural networks that are capable of perf
 
 **src/**: all source files.
 - **custom_tf_classes/**: Custom TensorFlow classed
- - `callbacks.py`: custom callbacks (e.g. for saving weights and biases during training)
- - `constraints.py`: custom constraints imposed on the parameters during training (currently not used)
- - `initializers.py`: custom initializers, used to establish the perfect weights and biases for CA emulation
- - `layers.py`: custom layers, including a Conv layer with periodic padding
- - `models.py`: custom models (currently not used)
+  - `callbacks.py`: custom callbacks (e.g. for saving weights and biases during training)
+  - `constraints.py`: custom constraints imposed on the parameters during training (currently not used)
+  - `initializers.py`: custom initializers, used to establish the perfect weights and biases for CA emulation
+  - `layers.py`: custom layers, including a Conv layer with periodic padding
+  - `models.py`: custom models (currently not used)
 - **nn/**: neural networks (NNs) that emulate the CAs
- - `eca.py`: NN that emulates an elementary CA
- - `nuca.py`: NN that emulates a non-uniform CA
- - `na.py`: NN that emulates a network automaton (under development)
+  - `eca.py`: NN that emulates an elementary CA
+  - `nuca.py`: NN that emulates a non-uniform CA
+  - `na.py`: NN that emulates a network automaton (under development)
 - **train/**: classes used for training the NN
- - `train.py`: contains wrapper for training procedure in TensorFlow
+  - `train.py`: contains wrapper for training procedure in TensorFlow
 - **visual/**: classes used for visualising the training procedure and outcome
- - `histories.py`: visualise history of configurations and of loss values (under development)
+  - `histories.py`: visualise history of configurations and of loss values (under development)
 - **utils/**: generic classes and definitions that are used throughout
- - `ruletable.py`: definitions related to the CA ruletable, such as `base_repr`
+  - `ruletable.py`: definitions related to the CA ruletable, such as `base_repr`
 
  **old/**: scripts that will be removed, but contain valuable information for now.
 
