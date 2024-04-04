@@ -1,4 +1,5 @@
 # %% import packages
+import tensorflow as tf
 from tensorflow.keras.layers import Conv1D
 
 # %% custom Layers
