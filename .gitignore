@@ -1,4 +1,4 @@
-./figures
-./files
-./.conda
-./data
+figures/
+files/
+.conda
+data/
