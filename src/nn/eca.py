@@ -1,12 +1,12 @@
 # %% import packages
 
-# existing packages
+# existing
 import tensorflow as tf
 
 from tensorflow.keras.layers import Conv1D, Activation
 from tensorflow.keras import Input
 
-# custom packages and classes
+# custom
 from src.custom_tf_classes.layers import PeriodicConv1D
 from src.custom_tf_classes.initializers import WeightsTripletFinder, BiasesTripletFinder, WeightsLocalUpdate
 
