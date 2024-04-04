@@ -31,7 +31,7 @@ model_perfect = ECA.model()
 
 # model with random weights and biases, and activation function (for training)
 ECA.rule = None
-ECA.activation = 'tanh'
+ECA.activation = 'tanh' # a modified sigmoid may be better
 ECA.train_triplet_id = True
 model = ECA.model()
 model.summary()
@@ -56,8 +56,8 @@ r_val = model_perfect.predict(x_val, batch_size=len(x_val), verbose=verbose)
 # TODO: can pretraining be parallellised?
 # TODO: can pretraining go in a class as well?
 
-PRETRAIN_AGAIN = True
-TRAIN_AGAIN = True
+PRETRAIN = True
+TRAIN = True
 
 # pretraining params
 N_pt = 50
@@ -72,7 +72,7 @@ stopping_patience = None # 20
 stopping_delta = None # 0.0001
 wab_callback = True
 
-if PRETRAIN_AGAIN:
+if PRETRAIN:
     best_loss = np.infty
     models = [ECA.model() for _ in range(N_pt)]
     for i in range(N_pt):
@@ -89,7 +89,7 @@ if PRETRAIN_AGAIN:
     print(f'Best pretraining loss: {best_loss}.')
     model = best_model
 
-if TRAIN_AGAIN:
+if TRAIN:
     tr = Train1D(model, x_train, r_train, x_val, r_val,
                  batch_size=batch_size, epochs=epochs, learning_rate=learning_rate, loss=loss,stopping_patience=stopping_patience, stopping_delta=stopping_delta, wab_callback=wab_callback)
     if wab_callback:
