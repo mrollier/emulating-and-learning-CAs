@@ -47,6 +47,17 @@ class WeightsLocalUpdate(Initializer):
         local_update = tf.expand_dims(local_update,axis=0)
         self.local_update = local_update
 
+    # TODO: why are shape and dtype required?
+    def __call__(self, shape, dtype=None):
+        return self.local_update
+    
+class WeightsHalfway(Initializer):
+    def __init__(self, rules):
+        local_update = .5*np.ones((8, len(rules)))
+        local_update = tf.constant(local_update, dtype=tf.float32)
+        local_update = tf.expand_dims(local_update,axis=0)
+        self.local_update = local_update
+
     def __call__(self, shape, dtype=None):
         return self.local_update
 
