@@ -10,6 +10,8 @@ from src.nn.eca import EcaEmulator
 from src.train.train import Train1D
 from src.visual.histories import History1D
 
+from src.custom_tf_classes.activations import general_sigmoid
+
 %load_ext autoreload
 %autoreload 2
 
