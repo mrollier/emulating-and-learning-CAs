@@ -24,7 +24,8 @@ N = 32
 N_train = 2**12
 N_val = 2**12
 timesteps = 1
-rules = list(range(256))
+# Note: persistent problems with i.a. rule 1
+rules = [1] # list(range(256))
 
 # BEWARE: this is an intensive computation
 PRETRAIN = True
@@ -35,6 +36,7 @@ SAVE_FIG = True
 # pretraining params
 N_pt = 50
 batch_size_pt = 128
+min_pretrain_loss = 0.1
 
 # training params
 batch_size = 64
@@ -87,10 +89,14 @@ for rule in rules:
     if PRETRAIN:
         losses = []
         best_loss = np.infty
-        models = [ECA.model() for _ in range(N_pt)]
-        for i in range(N_pt):
-            print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.         ', end='\r')
-            current_model = models[i]
+        # models = [ECA.model() for _ in range(N_pt)]
+        # for i in range(N_pt):
+        i = 0
+        while best_loss > min_pretrain_loss:
+            # print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.         ', end='\r')
+            print(f'Working on pretraining {i+1}. Best loss: {best_loss}.         ', end='\r')
+            # current_model = models[i]
+            current_model = ECA.model()
             tr = Train1D(current_model, x_train, r_train, x_val, r_val,
                         batch_size=batch_size_pt, epochs=1,
                         learning_rate=learning_rate, loss=loss)
@@ -100,6 +106,7 @@ for rule in rules:
             if current_loss < best_loss:
                 best_loss = current_loss
                 best_model = current_model
+            i += 1
         print('')
         model = best_model
 
