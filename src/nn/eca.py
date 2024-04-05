@@ -44,8 +44,6 @@ class EcaEmulator:
         self.output_hidden = output_hidden
         self.train_triplet_id = train_triplet_id
         self.activation = activation
-        if kernel_initializer=='halfway':
-            kernel_initializer = WeightsHalfway()
         self.kernel_initializer = kernel_initializer
 
     def model(self):
@@ -70,6 +68,8 @@ class EcaEmulator:
             use_bias=False
             train_local_update=False
         else:
+            if self.kernel_initializer=='halfway':
+                self.kernel_initializer = WeightsHalfway([self.rule])
             kernel_initializer = self.kernel_initializer
             use_bias=True
             train_local_update=True

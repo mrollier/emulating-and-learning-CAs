@@ -22,8 +22,8 @@ dir_figs = '../figures/eca/'
 # %% test eca emulator
 
 N = 32
-rule = 110
-timesteps = 1
+rule = 1 # 110 # 54 # 30
+timesteps = 2
 activation = None
 
 # model with perfect weights and biases
@@ -40,8 +40,12 @@ hstretch = 10
 gs = partial(general_sigmoid, hstretch=hstretch)
 ECA.activation = gs # 'tanh'
 
+# kernel initialiser
+kernel_initializer = 'halfway'
+ECA.kernel_initializer = kernel_initializer
+
 # init model
-ECA.train_triplet_id = True
+# ECA.train_triplet_id = True
 model = ECA.model()
 model.summary()
 
@@ -130,3 +134,4 @@ if SAVE_FIG:
     import matplotlib.pyplot as plt
     savename = f"plot_configs_ECA_{N}cells_rule{rule}_{epochs}epochs_bs{batch_size}_lr{str(learning_rate).replace('.','p')}.pdf"
     plt.savefig(dir_figs+savename, bbox_inches='tight')
+# %%
