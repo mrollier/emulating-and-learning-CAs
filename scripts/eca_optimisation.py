@@ -44,6 +44,7 @@ loss = 'mse'
 stopping_patience = None # 20
 stopping_delta = None # 0.0001
 wab_callback = True
+train_verbose=False
 
 # bookkeeping
 lr_str = str(learning_rate).replace('.','p')
@@ -67,7 +68,6 @@ for rule in rules:
     ECA.activation = 'tanh' # a modified sigmoid may be better
     ECA.train_triplet_id = True
     model = ECA.model()
-    # model.summary()
 
     ## define inputs and outputs
 
@@ -110,15 +110,16 @@ for rule in rules:
         hist_savename = f'pretraining_loss_hist_ECA_{N}cells_rule{rule}_single-epochs_bs{batch_size_pt}_lr{lr_str}.pdf'
         plt.title(hist_title)
         plt.savefig(dir_figs+hist_savename, bbox_inches='tight')
+        print(f"SAVED {hist_savename}.")
         plt.close()
 
     if TRAIN:
         tr = Train1D(model, x_train, r_train, x_val, r_val,
                     batch_size=batch_size, epochs=epochs, learning_rate=learning_rate, loss=loss,stopping_patience=stopping_patience, stopping_delta=stopping_delta, wab_callback=wab_callback)
         if wab_callback:
-            history, wab_history = tr.train()
+            history, wab_history = tr.train(verbose=train_verbose)
         else:
-            history = tr.train()
+            history = tr.train(verbose=train_verbose)
 
     # save model
     modelname = f"ECA_{N}cells_rule{rule}_{epochs}epochs_bs{batch_size}_lr{lr_str}.h5"
@@ -136,5 +137,9 @@ for rule in rules:
     if SAVE_FIG:
         savename = f"plot_configs_ECA_{N}cells_rule{rule}_{epochs}epochs_bs{batch_size}_lr{lr_str}.pdf"
         plt.savefig(dir_figs+savename, bbox_inches='tight')
+        print(f"SAVED {savename}.")
         plt.close()
+
+    final_loss = history.history['val_loss'][0]
+    print(f"Finalised rule {rule} with val_loss {final_loss}.")
 # %%
