@@ -18,7 +18,7 @@ dir_figs = '../figures/eca/'
 
 # %% test eca emulator
 
-N = 64
+N = 32
 rule = 110
 timesteps = 1
 activation = None
@@ -76,7 +76,7 @@ if PRETRAIN:
     best_loss = np.infty
     models = [ECA.model() for _ in range(N_pt)]
     for i in range(N_pt):
-        print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.', end='\r')
+        print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.         ', end='\r')
         current_model = models[i]
         tr = Train1D(current_model, x_train, r_train, x_val, r_val,
                      batch_size=batch_size_pt, epochs=1,
@@ -86,7 +86,7 @@ if PRETRAIN:
         if current_loss < best_loss:
             best_loss = current_loss
             best_model = current_model
-    print(f'Best pretraining loss: {best_loss}.')
+    print('')
     model = best_model
 
 if TRAIN:
@@ -110,5 +110,5 @@ fig, ax = hist.plot_configs(input_example, output_example, rule, timesteps)
 
 if SAVE_FIG:
     import matplotlib.pyplot as plt
-    savename = f"plot_configs_ECA_rule{rule}_{epochs}epochs_bs{batch_size}_lr{str(learning_rate).replace('.','p')}.pdf"
+    savename = f"plot_configs_ECA_{N}cells_rule{rule}_{epochs}epochs_bs{batch_size}_lr{str(learning_rate).replace('.','p')}.pdf"
     plt.savefig(dir_figs+savename, bbox_inches='tight')

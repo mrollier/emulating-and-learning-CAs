@@ -89,7 +89,7 @@ if PRETRAIN:
         if current_loss < best_loss:
             best_loss = current_loss
             best_model = current_model
-    print(f'Best pretraining loss: {best_loss}.')
+    print('')
     model = best_model
 
 if TRAIN:
@@ -115,5 +115,5 @@ fig, ax = hist.plot_configs(input_example, output_example, rules_str, timesteps)
 if SAVE_FIG:
     import matplotlib.pyplot as plt
     lr_str = str(learning_rate).replace('.','p')
-    savename = f"plot_configs_nuCA_rules{rules_str}_{epochs}epochs_bs{batch_size}_lr{lr_str}.pdf"
+    savename = f"plot_configs_nuCA_{N}cells_rules{rules_str}_{epochs}epochs_bs{batch_size}_lr{lr_str}.pdf"
     plt.savefig(dir_figs+savename, bbox_inches='tight')
