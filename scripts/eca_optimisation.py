@@ -37,9 +37,9 @@ N_pt = 50
 batch_size_pt = 128
 
 # training params
-batch_size = 8
+batch_size = 64
 epochs = 40
-learning_rate = 0.0005
+learning_rate = 0.005
 loss = 'mse'
 stopping_patience = None # 20
 stopping_delta = None # 0.0001
