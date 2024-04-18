@@ -21,7 +21,8 @@ dir_figs = '../figures/nuca/'
 N = 64
 rules = [255, 0, 0]
 Nrules = len(rules)
-rule_alloc = np.random.randint(0,Nrules,size=N)
+# rule_alloc = np.random.randint(0,Nrules,size=N)
+rule_alloc = [2]*32 + [0]*32
 timesteps = 1
 activation = None
 
@@ -30,7 +31,7 @@ train_triplet_id = False
 nuCA = NucaEmulator(N, rules=rules, timesteps=timesteps,
                   activation=activation, train_triplet_id=train_triplet_id,
                   rule_alloc=rule_alloc)
-model_perfect = nuCA.model()
+model_perfect = nuCA.model_dense()
 
 # model with random weights and biases, and activation function (for training)
 nuCA.rules = None

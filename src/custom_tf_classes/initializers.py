@@ -66,10 +66,18 @@ class WeightsRuleAllocation(Initializer):
     Used to initialise the weights of the LocallyConnected1D layer,
     which picks out the required cells in a non-uniform situation.
     """
-    def __init__(self, Nrules, rule_alloc):
+    def __init__(self, Nrules, rule_alloc, dense=True):
         N = len(rule_alloc)
-        alloc_weights = tf.one_hot(rule_alloc, Nrules)[:,:,tf.newaxis]
-        self.alloc_weights = alloc_weights
+        alloc_one_hot = tf.one_hot(rule_alloc, Nrules)
+        if not dense:
+            alloc_weights = alloc_one_hot[:,:,tf.newaxis]
+            self.alloc_weights = alloc_weights
+        else:
+            alloc_weights = tf.zeros([0,N])
+            for column in tf.transpose(alloc_one_hot):
+                column_diag = tf.linalg.diag(column)
+                alloc_weights = tf.concat([alloc_weights, column_diag], axis=0)
+            self.alloc_weights = alloc_weights
 
     def __call__(self, shape, dtype=None):
         return self.alloc_weights

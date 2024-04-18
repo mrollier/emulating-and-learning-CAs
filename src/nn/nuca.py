@@ -177,17 +177,23 @@ class NucaEmulator:
 
         # dense layer with sparse weights matrix
         if self.rule_alloc is not None:
-            kernel_initializer = WeightsRuleAllocation(Nrules, self.rule_alloc, dense=True)
+            kernel_initializer = WeightsRuleAllocation(
+                Nrules,
+                self.rule_alloc,
+                dense=True)
             use_bias=False
             train_rule_alloc=False
         else:
             kernel_initializer = 'he_normal'
             use_bias=True
             train_rule_alloc=True
-        cell_selector = LocallyConnected1D(1, 1, activation='relu',
-                                        kernel_initializer=kernel_initializer,
-                                        use_bias=use_bias,
-                                        trainable=train_rule_alloc)
+        cell_selector = Dense(
+            self.N,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            use_bias=use_bias,
+            trainable=train_rule_alloc
+            )
 
         # rinse and repeat over several timesteps
         x = inputs
@@ -196,11 +202,13 @@ class NucaEmulator:
             for _ in range(self.timesteps-1):
                 x = triplet_id(x)
                 x = global_updates(x)
+                x = tf.transpose(x, perm=[0,2,1])
                 x = Flatten()(x)
                 x = cell_selector(x)
                 all_configs = tf.concat([all_configs, x], axis=2)
             x = triplet_id(x)
             x = global_updates(x)
+            x = tf.transpose(x, perm=[0,2,1])
             x = Flatten()(x)
             x = cell_selector(x)
             outputs = Activation(self.activation)(x)
@@ -209,6 +217,7 @@ class NucaEmulator:
             for _ in range(self.timesteps):
                 x = triplet_id(x)
                 x = global_updates(x)
+                x = tf.transpose(x, perm=[0,2,1])
                 x = Flatten()(x)
                 x = cell_selector(x)
             outputs = Activation(self.activation)(x)
