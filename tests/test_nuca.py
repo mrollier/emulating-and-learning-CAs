@@ -19,8 +19,9 @@ dir_figs = '../figures/nuca/'
 # %% test nuca emulator
 
 N = 64
-rules = [110, 54]
-rule_alloc = np.random.randint(0,2,size=N)
+rules = [255, 0, 0]
+Nrules = len(rules)
+rule_alloc = np.random.randint(0,Nrules,size=N)
 timesteps = 1
 activation = None
 
