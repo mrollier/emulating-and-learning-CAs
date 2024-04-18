@@ -60,11 +60,13 @@ class NucaEmulator:
     def model(self):
     # TODO: add an option for a more powerful model (e.g. with a fully-connected layer instead of the LocallyConnected1D)
     # exceptions and preprocessing
+        rules = np.atleast_1d(self.rules)
+        Nrules = len(rules)
         if self.rule_alloc is not None:
             if len(self.rule_alloc) != self.N:
                 raise Exception("The parameter rule_dist should have size N.")
-        rules = np.atleast_1d(self.rules)
-        Nrules = len(rules)
+            if np.max(self.rule_alloc) > Nrules - 1:
+                raise Exception("The rule allocation does not correspond to the number of rules.")
 
         # model input
         inputs = Input((self.N,1), dtype=tf.float32)
