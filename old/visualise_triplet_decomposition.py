@@ -51,14 +51,16 @@ class CylindricalPadding1D(Layer):
 
 # %% Load data
 
-x_train_all = np.load("../files/ECAs_1024sims-per-rule_64x64_train_diagrams.npy")
-r_train_all = np.load("../files/ECAs_1024sims-per-rule_64x64_train_labels.npy")
+# x_train_all = np.load("../files/ECAs_1024sims-per-rule_64x64_train_diagrams.npy")
+# r_train_all = np.load("../files/ECAs_1024sims-per-rule_64x64_train_labels.npy")
 
-ECA_rule = 110
+# ECA_rule = 110
 
-x_train_sel = x_train_all[1024*ECA_rule:1024*(ECA_rule+1)]
-x_train_input  = x_train_sel[:,0]
-x_train_output = x_train_sel[:,1]
+# x_train_sel = x_train_all[1024*ECA_rule:1024*(ECA_rule+1)]
+# x_train_input  = x_train_sel[:,0]
+# x_train_output = x_train_sel[:,1]
+
+x_train_input = 
 
 # %% visualise a single input row
 
