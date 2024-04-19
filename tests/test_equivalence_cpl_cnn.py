@@ -30,7 +30,7 @@ T = 32
 
 # states and rules
 k=2
-Nrules = 3
+Nrules = 8
 rules = np.sort(np.random.randint(0,256,Nrules))
 print(f"The rules are {rules}.")
 
