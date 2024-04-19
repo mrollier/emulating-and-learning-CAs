@@ -63,7 +63,7 @@ class NucaEmulator:
         Nrules = len(rules)
         if self.rule_alloc is not None:
             if len(self.rule_alloc) != self.N:
-                raise Exception("The parameter rule_dist should have size N.")
+                raise Exception("The parameter rule_alloc should have size N.")
             if np.max(self.rule_alloc) > Nrules - 1:
                 raise Exception("The rule allocation does not correspond to the number of rules.")
 
@@ -77,10 +77,12 @@ class NucaEmulator:
         else:
             kernel_initializer = 'he_normal'
             bias_initializer = 'zeros'
-        triplet_id = PeriodicConv1D(8,3, activation='relu',
-                            kernel_initializer=kernel_initializer,
-                            bias_initializer=bias_initializer,
-                            trainable=self.train_triplet_id)
+        triplet_id = PeriodicConv1D(
+            8,3,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            bias_initializer=bias_initializer,
+            trainable=self.train_triplet_id)
 
         # 1x1 convolution, summing according to each of the rules
         Nrules = len(rules)
@@ -90,10 +92,12 @@ class NucaEmulator:
         else:
             kernel_initializer = 'he_normal'
             use_bias=True
-        global_updates = Conv1D(Nrules, 1, activation='relu',
-                                kernel_initializer=kernel_initializer,
-                                use_bias=use_bias,
-                                trainable=self.train_triplet_id)
+        global_updates = Conv1D(
+            Nrules, 1,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            use_bias=use_bias,
+            trainable=self.train_triplet_id)
 
         # locally connected network to select the desired cell state
         if self.rule_alloc is not None:
@@ -104,10 +108,12 @@ class NucaEmulator:
             kernel_initializer = 'he_normal'
             use_bias=True
             train_rule_alloc=True
-        cell_selector = LocallyConnected1D(1, 1, activation='relu',
-                                        kernel_initializer=kernel_initializer,
-                                        use_bias=use_bias,
-                                        trainable=train_rule_alloc)
+        cell_selector = LocallyConnected1D(
+            1, 1,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            use_bias=use_bias,
+            trainable=train_rule_alloc)
 
         # rinse and repeat over several timesteps
         x = inputs
@@ -132,9 +138,13 @@ class NucaEmulator:
 
         # sequence and return model
         if self.output_hidden:
-            model = tf.keras.Model(inputs=inputs, outputs=[all_configs,outputs])
+            model = tf.keras.Model(
+                inputs=inputs,
+                outputs=[all_configs,outputs])
         else:
-            model = tf.keras.Model(inputs=inputs, outputs=outputs)
+            model = tf.keras.Model(
+                inputs=inputs,
+                outputs=outputs)
 
         return model
     
@@ -157,10 +167,11 @@ class NucaEmulator:
         else:
             kernel_initializer = 'he_normal'
             bias_initializer = 'zeros'
-        triplet_id = PeriodicConv1D(8,3, activation='relu',
-                            kernel_initializer=kernel_initializer,
-                            bias_initializer=bias_initializer,
-                            trainable=self.train_triplet_id)
+        triplet_id = PeriodicConv1D(
+            8,3,
+            activation='relu',
+            kernel_initializer=kernel_initializer,bias_initializer=bias_initializer,
+            trainable=self.train_triplet_id)
 
         # 1x1 convolution, summing according to each of the rules
         Nrules = len(rules)
@@ -170,10 +181,12 @@ class NucaEmulator:
         else:
             kernel_initializer = 'he_normal'
             use_bias=True
-        global_updates = Conv1D(Nrules, 1, activation='relu',
-                                kernel_initializer=kernel_initializer,
-                                use_bias=use_bias,
-                                trainable=self.train_triplet_id)
+        global_updates = Conv1D(
+            Nrules, 1,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            use_bias=use_bias,
+            trainable=self.train_triplet_id)
 
         # dense layer with sparse weights matrix
         if self.rule_alloc is not None:
@@ -224,8 +237,12 @@ class NucaEmulator:
 
         # sequence and return model
         if self.output_hidden:
-            model = tf.keras.Model(inputs=inputs, outputs=[all_configs,outputs])
+            model = tf.keras.Model(
+                inputs=inputs,
+                outputs=[all_configs,outputs])
         else:
-            model = tf.keras.Model(inputs=inputs, outputs=outputs)
+            model = tf.keras.Model(
+                inputs=inputs,
+                outputs=outputs)
 
         return model

@@ -40,7 +40,8 @@ spacetime_diagram = cpl.evolve(
     init_config, timesteps=T,
     apply_rule=lambda n, c, t: cpl.nks_rule(
         n,
-        rules[rule_alloc[t-1,c]]))
+        rules[rule_alloc[t-1,c]]),
+        memoize=True)
 
 # %% plot nuCA spacetime diagram
 # TODO: currently only renders nicely with 8 rules
