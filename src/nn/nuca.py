@@ -218,12 +218,14 @@ class NucaEmulator:
                 x = tf.transpose(x, perm=[0,2,1])
                 x = Flatten()(x)
                 x = cell_selector(x)
+                x = x[:,:,tf.newaxis]
                 all_configs = tf.concat([all_configs, x], axis=2)
             x = triplet_id(x)
             x = global_updates(x)
             x = tf.transpose(x, perm=[0,2,1])
             x = Flatten()(x)
             x = cell_selector(x)
+            x = x[:,:,tf.newaxis]
             outputs = Activation(self.activation)(x)
             all_configs = tf.concat([all_configs, outputs], axis=2)
         else:
@@ -233,6 +235,7 @@ class NucaEmulator:
                 x = tf.transpose(x, perm=[0,2,1])
                 x = Flatten()(x)
                 x = cell_selector(x)
+                x = x[:,:,tf.newaxis]
             outputs = Activation(self.activation)(x)
 
         # sequence and return model
