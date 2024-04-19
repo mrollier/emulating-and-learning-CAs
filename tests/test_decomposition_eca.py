@@ -16,10 +16,15 @@ from src.visual.decomposition import DecompositionECA
 dir_figs = '../figures/eca/'
 
 # %% plot
+N = 32
+input = np.random.randint(0,2,N)
+rule = 54
 
-input = np.random.randint(0,2,64)
-rule = 110
+SAVEFIG=False
+saveas=None
+if SAVEFIG:
+    savename=f'eca-N{N}-rule{rule}-decomposition.pdf'
+    saveas=dir_figs+savename
 
 decomposition = DecompositionECA(input, rule)
-fig, ax = decomposition.plot()
-# %%
+fig, ax = decomposition.plot(saveas=saveas)
