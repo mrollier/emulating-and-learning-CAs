@@ -8,7 +8,7 @@ from tensorflow.keras import Input
 
 # custom
 from src.custom_tf_classes.layers import PeriodicConv1D
-from src.custom_tf_classes.initializers import WeightsTripletFinder, BiasesTripletFinder, WeightsLocalUpdate
+from src.custom_tf_classes.initializers import WeightsTripletFinder, BiasesTripletFinder, WeightsLocalUpdate, WeightsHalfway
 
 # %% ECA emulator class
 
@@ -37,13 +37,14 @@ class EcaEmulator:
     model : keras.src.engine.functional.Functional
         Keras model object that can be used for inference, training ... The output of this model is either the content of all intermediate CA configurations (if output_hidden is True), or only the final configuration (if output_hidden is False).
     """
-    def __init__(self, N:int, rule=None, timesteps=1, output_hidden=False, train_triplet_id=True, activation=None):
+    def __init__(self, N:int, rule=None, timesteps=1, output_hidden=False, train_triplet_id=True, activation=None, kernel_initializer='he_normal'):
         self.N = N
         self.rule = rule
         self.timesteps = timesteps
         self.output_hidden = output_hidden
         self.train_triplet_id = train_triplet_id
         self.activation = activation
+        self.kernel_initializer = kernel_initializer
 
     def model(self):
         # model input
@@ -67,7 +68,9 @@ class EcaEmulator:
             use_bias=False
             train_local_update=False
         else:
-            kernel_initializer = 'he_normal'
+            if self.kernel_initializer=='halfway':
+                self.kernel_initializer = WeightsHalfway([self.rule])
+            kernel_initializer = self.kernel_initializer
             use_bias=True
             train_local_update=True
         global_update = Conv1D(1, 1, activation='relu',

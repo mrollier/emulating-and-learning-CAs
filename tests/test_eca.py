@@ -2,6 +2,7 @@
 
 # classic
 import numpy as np
+from functools import partial
 
 # custom
 import sys
@@ -9,6 +10,8 @@ sys.path.insert(0, '..') # TODO: this is probably not the right way to do this
 from src.nn.eca import EcaEmulator
 from src.train.train import Train1D
 from src.visual.histories import History1D
+
+from src.custom_tf_classes.activations import general_sigmoid
 
 %load_ext autoreload
 %autoreload 2
@@ -19,8 +22,8 @@ dir_figs = '../figures/eca/'
 # %% test eca emulator
 
 N = 32
-rule = 110
-timesteps = 1
+rule = 1 # 110 # 54 # 30
+timesteps = 2
 activation = None
 
 # model with perfect weights and biases
@@ -31,8 +34,18 @@ model_perfect = ECA.model()
 
 # model with random weights and biases, and activation function (for training)
 ECA.rule = None
-ECA.activation = 'tanh' # a modified sigmoid may be better
-ECA.train_triplet_id = True
+
+# activation function
+hstretch = 10
+gs = partial(general_sigmoid, hstretch=hstretch)
+ECA.activation = gs # 'tanh'
+
+# kernel initialiser
+kernel_initializer = 'halfway'
+ECA.kernel_initializer = kernel_initializer
+
+# init model
+# ECA.train_triplet_id = True
 model = ECA.model()
 model.summary()
 
@@ -55,6 +68,7 @@ r_val = model_perfect.predict(x_val, batch_size=len(x_val), verbose=verbose)
 # %% pretraining and training
 # TODO: can pretraining be parallellised?
 # TODO: can pretraining go in a class as well?
+# TODO: make a nice script that finds a good weight initialisation (which outputs values between 0 and 1 independent of the input). Perhaps this can be done deterministically (through analysis)
 
 PRETRAIN = True
 TRAIN = True
@@ -64,13 +78,20 @@ N_pt = 50
 batch_size_pt = 128
 
 # training params
-batch_size = 8
+batch_size = 64
 epochs = 40
-learning_rate = 0.0005
+learning_rate = 0.005
 loss = 'mse'
 stopping_patience = None # 20
 stopping_delta = None # 0.0001
 wab_callback = True
+
+# it may be interesting to train on halves: which wab config provides halfway points?
+halves_train = np.ones(r_train.shape)*.5
+halves_val = np.ones(r_val.shape)*.5
+
+r_train = halves_train.copy()
+r_val = halves_val.copy()
 
 if PRETRAIN:
     best_loss = np.infty
@@ -78,6 +99,7 @@ if PRETRAIN:
     for i in range(N_pt):
         print(f'Working on pretraining {i+1}/{N_pt}. Best loss: {best_loss}.         ', end='\r')
         current_model = models[i]
+        # pretrain
         tr = Train1D(current_model, x_train, r_train, x_val, r_val,
                      batch_size=batch_size_pt, epochs=1,
                      learning_rate=learning_rate, loss=loss)
@@ -99,7 +121,7 @@ if TRAIN:
 
 # %% visualisation
 
-SAVE_FIG = True
+SAVE_FIG = False
 
 idx_ex = np.random.randint(N_train)
 input_example = x_train[idx_ex]
@@ -112,3 +134,4 @@ if SAVE_FIG:
     import matplotlib.pyplot as plt
     savename = f"plot_configs_ECA_{N}cells_rule{rule}_{epochs}epochs_bs{batch_size}_lr{str(learning_rate).replace('.','p')}.pdf"
     plt.savefig(dir_figs+savename, bbox_inches='tight')
+# %%

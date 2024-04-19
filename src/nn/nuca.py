@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 # note: LocallyConnected1D is removed from newer versions of TensorFlow!
-from tensorflow.keras.layers import Conv1D, Activation, LocallyConnected1D
+from tensorflow.keras.layers import Conv1D, Activation, LocallyConnected1D, Flatten, Dense
 from tensorflow.keras import Input
 
 # custom packages and classes
@@ -58,13 +58,14 @@ class NucaEmulator:
         self.activation = activation
 
     def model(self):
-    # TODO: add an option for a more powerful model (e.g. with a fully-connected layer instead of the LocallyConnected1D)
-    # exceptions and preprocessing
+        # exceptions and preprocessing
+        rules = np.atleast_1d(self.rules)
+        Nrules = len(rules)
         if self.rule_alloc is not None:
             if len(self.rule_alloc) != self.N:
                 raise Exception("The parameter rule_dist should have size N.")
-        rules = np.atleast_1d(self.rules)
-        Nrules = len(rules)
+            if np.max(self.rule_alloc) > Nrules - 1:
+                raise Exception("The rule allocation does not correspond to the number of rules.")
 
         # model input
         inputs = Input((self.N,1), dtype=tf.float32)
@@ -126,6 +127,98 @@ class NucaEmulator:
             for _ in range(self.timesteps):
                 x = triplet_id(x)
                 x = global_updates(x)
+                x = cell_selector(x)
+            outputs = Activation(self.activation)(x)
+
+        # sequence and return model
+        if self.output_hidden:
+            model = tf.keras.Model(inputs=inputs, outputs=[all_configs,outputs])
+        else:
+            model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+        return model
+    
+    def model_dense(self):
+        rules = np.atleast_1d(self.rules)
+        Nrules = len(rules)
+        if self.rule_alloc is not None:
+            if len(self.rule_alloc) != self.N:
+                raise Exception("The parameter rule_dist should have size N.")
+            if np.max(self.rule_alloc) > Nrules - 1:
+                raise Exception("The rule allocation does not correspond to the number of rules.")
+
+        # model input
+        inputs = Input((self.N,1), dtype=tf.float32)
+
+        # 1x3 convolution to identify each of the eight triplets
+        if not self.train_triplet_id:
+            kernel_initializer = WeightsTripletFinder()
+            bias_initializer = BiasesTripletFinder()
+        else:
+            kernel_initializer = 'he_normal'
+            bias_initializer = 'zeros'
+        triplet_id = PeriodicConv1D(8,3, activation='relu',
+                            kernel_initializer=kernel_initializer,
+                            bias_initializer=bias_initializer,
+                            trainable=self.train_triplet_id)
+
+        # 1x1 convolution, summing according to each of the rules
+        Nrules = len(rules)
+        if rules.all() is not None: # all rules provided
+            kernel_initializer = WeightsLocalUpdate(rules)
+            use_bias=False
+        else:
+            kernel_initializer = 'he_normal'
+            use_bias=True
+        global_updates = Conv1D(Nrules, 1, activation='relu',
+                                kernel_initializer=kernel_initializer,
+                                use_bias=use_bias,
+                                trainable=self.train_triplet_id)
+
+        # dense layer with sparse weights matrix
+        if self.rule_alloc is not None:
+            kernel_initializer = WeightsRuleAllocation(
+                Nrules,
+                self.rule_alloc,
+                dense=True)
+            use_bias=False
+            train_rule_alloc=False
+        else:
+            kernel_initializer = 'he_normal'
+            use_bias=True
+            train_rule_alloc=True
+        cell_selector = Dense(
+            self.N,
+            activation='relu',
+            kernel_initializer=kernel_initializer,
+            use_bias=use_bias,
+            trainable=train_rule_alloc
+            )
+
+        # rinse and repeat over several timesteps
+        x = inputs
+        if self.output_hidden:
+            all_configs = tf.identity(inputs)
+            for _ in range(self.timesteps-1):
+                x = triplet_id(x)
+                x = global_updates(x)
+                x = tf.transpose(x, perm=[0,2,1])
+                x = Flatten()(x)
+                x = cell_selector(x)
+                all_configs = tf.concat([all_configs, x], axis=2)
+            x = triplet_id(x)
+            x = global_updates(x)
+            x = tf.transpose(x, perm=[0,2,1])
+            x = Flatten()(x)
+            x = cell_selector(x)
+            outputs = Activation(self.activation)(x)
+            all_configs = tf.concat([all_configs, outputs], axis=2)
+        else:
+            for _ in range(self.timesteps):
+                x = triplet_id(x)
+                x = global_updates(x)
+                x = tf.transpose(x, perm=[0,2,1])
+                x = Flatten()(x)
                 x = cell_selector(x)
             outputs = Activation(self.activation)(x)
 
