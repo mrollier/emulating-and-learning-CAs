@@ -27,7 +27,7 @@ T = 32
 
 # states and rules
 k=2
-Nrules = 2
+Nrules = 3
 rules = np.sort(np.random.randint(0,256,Nrules))
 print(f"The rules are {rules}.")
 
@@ -35,18 +35,31 @@ print(f"The rules are {rules}.")
 init_config = np.random.randint(k,size=(1,N))
 
 # rule allocation (index of rules list)
-init_rule_alloc = np.random.randint(Nrules,size=N)
+rule_alloc = np.random.randint(Nrules,size=N)
 
 # does not change over time
-rule_alloc = np.tile(init_rule_alloc, (N,1))
+# rule_alloc_2D = np.tile(init_rule_alloc, (N,1))
+
+# %% initialise and run cellpylib
+
+diagram_cpl = cpl.evolve(
+    init_config, timesteps=T,
+    apply_rule=lambda n, c, t: cpl.nks_rule(
+        n,
+        rules[rule_alloc[c]]),
+        memoize=False)
+
+# plt.imshow(diagram_cpl, cmap='Greys')
 
 # %% initialise and run CNNs
 
 # model with perfect weights and biases
 train_triplet_id = False
-nuCA = NucaEmulator(N, rules=rules, timesteps=T,
-                  activation=None, train_triplet_id=train_triplet_id,
-                  rule_alloc=init_rule_alloc)
+nuCA = NucaEmulator(
+    N, rules=rules, timesteps=T,
+    activation=None,
+    train_triplet_id=train_triplet_id,
+    rule_alloc=init_rule_alloc)
 
 cnn_loc_connected = nuCA.model()
 # cnn_sparse_dense = nuCA.model_dense()
