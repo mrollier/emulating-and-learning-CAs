@@ -4,7 +4,7 @@
 
 # change system path
 import sys
-sys.path.insert(0, '..') # TODO: this is probably not the right way to do this
+sys.path.insert(0, '../..') # TODO: this is probably not the right way to do this
 
 # classic
 import numpy as np
@@ -23,7 +23,8 @@ from src.nn.nuca import NucaEmulator
 %autoreload 2
 
 # choose appropriate directory
-dir_figs = '../figures/nuca/'
+dir_figs = '../../figures/nuca/'
+dir_data = '../../data/nuca/'
 
 # %% static values
 
@@ -32,14 +33,15 @@ test_per_setting = 10
 
 # dimensions (static)
 k=2
-N = 64
-T = 64
-S = 64
+N = 256
+T = 32
+S = 32
 
 # %% dynamic values
 
 # unique rules (dynamic)
-Nrules_list = np.logspace(0, 6, 7, base=2, dtype=int)
+power = int(np.log2(N))
+Nrules_list = np.logspace(0, power, power+1, base=2, dtype=int)
 rules_list = [np.sort(np.random.choice(
     range(256),
     size=Nrules,
@@ -167,7 +169,7 @@ SAVEFIG=True
 savename=f"nuca-comparison-Nrules-N{N}_T{T}_S{S}_avg-from-{test_per_setting}.pdf"
 
 # setup
-width=8; height=3
+width=7; height=3
 labelsize = 14
 fig, ax = plt.subplots(1,1,figsize=(width,height))
 jitter_factor = 1.05
@@ -181,9 +183,27 @@ ax.errorbar(Nrules_list*jitter_factor, cnn_dense_means, yerr=cnn_dense_errors, f
 ax.set_title(f"Computation time for {S} $\\nu$CAs of {N} cells and {T} timesteps", size=labelsize+2)
 ax.set_xscale('log', base=2)
 ax.legend(ncols=3)
-ax.set_yticks([3, 4, 5, 6, 7])
+ax.set_yticks([0, 2, 4, 6, 8])
 ax.set_xlabel(f'Number of rules $N_R$', size=labelsize)
 ax.set_ylabel(f'Time to compute (s)', size=labelsize)
+ax.tick_params(axis='both', which='major', labelsize=labelsize-2)
 
 if SAVEFIG:
     plt.savefig(dir_figs+savename, bbox_inches='tight')
+
+# %% save data for future reference
+
+dataname = f"nuca-comparison-Nrules-N{N}_T{T}_S{S}_avg-from-{test_per_setting}.npy"
+
+with open(dir_data+dataname, 'wb') as f:
+    # note the order!
+    np.save(f, Nrules_list)
+    np.save(f, time_deltas_cpl_array)
+    np.save(f, time_deltas_cnn_lc_array)
+    np.save(f, time_deltas_cnn_dense_array)
+
+# with open(dir_data+dataname, 'rb') as f:
+#     a = np.load(f)
+#     b = np.load(f)
+#     c = np.load(f)
+#     d = np.load(f)
