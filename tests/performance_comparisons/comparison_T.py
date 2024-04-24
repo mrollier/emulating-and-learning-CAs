@@ -176,7 +176,7 @@ ax.set_title(f"Computation time for {S} $\\nu$CAs of {N} cells and {Nrules} rule
 ax.legend(ncols=3)
 ax.set_yticks([0, 2, 4, 6, 8])
 ax.set_xlim([0, 110])
-ax.set_xlabel(f'Number of rules $N_R$', size=labelsize)
+ax.set_xlabel(f'Number of timesteps $T$', size=labelsize)
 ax.set_ylabel(f'Time to compute (s)', size=labelsize)
 ax.tick_params(axis='both', which='major', labelsize=labelsize-2)
 
@@ -187,16 +187,25 @@ if SAVEFIG:
 
 dataname = f"nuca-comparison-T-N{N}_Nrules{Nrules}_S{S}_avg-from-{test_per_setting}.npy"
 
-with open(dir_data+dataname, 'wb') as f:
-    # note the order!
-    np.save(f, T_list)
-    np.save(f, time_deltas_cpl_array)
-    np.save(f, time_deltas_cnn_lc_array)
-    np.save(f, time_deltas_cnn_dense_array)
+# with open(dir_data+dataname, 'wb') as f:
+#     # note the order!
+#     np.save(f, T_list)
+#     np.save(f, time_deltas_cpl_array)
+#     np.save(f, time_deltas_cnn_lc_array)
+#     np.save(f, time_deltas_cnn_dense_array)
 
-# with open(dir_data+dataname, 'rb') as f:
-#     a = np.load(f)
-#     b = np.load(f)
-#     c = np.load(f)
-#     d = np.load(f)
-# %%
+with open(dir_data+dataname, 'rb') as f:
+    T_list = np.load(f)
+    time_deltas_cpl_array = np.load(f)
+    time_deltas_cnn_lc_array = np.load(f)
+    time_deltas_cnn_dense_array = np.load(f)
+
+# calculate relevant quantities
+cpl_means = np.mean(time_deltas_cpl_array, axis=0)
+cpl_errors = np.std(time_deltas_cpl_array, axis=0)
+
+cnn_lc_means = np.mean(time_deltas_cnn_lc_array, axis=0)
+cnn_lc_errors = np.std(time_deltas_cnn_lc_array, axis=0)
+
+cnn_dense_means = np.mean(time_deltas_cnn_dense_array, axis=0)
+cnn_dense_errors = np.std(time_deltas_cnn_dense_array, axis=0)

@@ -108,3 +108,4 @@ for ax in axs:
     ax.set_ylabel(f"$\\leftarrow$ Time", size=labelsize)
 
 fig.suptitle(f"Three different techniques for simulating a $\\nu$CA with rules {rules}", size=labelsize+8)
+# %%

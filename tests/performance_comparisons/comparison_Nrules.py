@@ -195,15 +195,25 @@ if SAVEFIG:
 
 dataname = f"nuca-comparison-Nrules-N{N}_T{T}_S{S}_avg-from-{test_per_setting}.npy"
 
-with open(dir_data+dataname, 'wb') as f:
-    # note the order!
-    np.save(f, Nrules_list)
-    np.save(f, time_deltas_cpl_array)
-    np.save(f, time_deltas_cnn_lc_array)
-    np.save(f, time_deltas_cnn_dense_array)
+# with open(dir_data+dataname, 'wb') as f:
+#     # note the order!
+#     np.save(f, Nrules_list)
+#     np.save(f, time_deltas_cpl_array)
+#     np.save(f, time_deltas_cnn_lc_array)
+#     np.save(f, time_deltas_cnn_dense_array)
 
-# with open(dir_data+dataname, 'rb') as f:
-#     a = np.load(f)
-#     b = np.load(f)
-#     c = np.load(f)
-#     d = np.load(f)
+with open(dir_data+dataname, 'rb') as f:
+    Nrules_list = np.load(f)
+    time_deltas_cpl_array = np.load(f)
+    time_deltas_cnn_lc_array = np.load(f)
+    time_deltas_cnn_dense_array = np.load(f)
+
+# calculate relevant quantities
+cpl_means = np.mean(time_deltas_cpl_array, axis=0)
+cpl_errors = np.std(time_deltas_cpl_array, axis=0)
+
+cnn_lc_means = np.mean(time_deltas_cnn_lc_array, axis=0)
+cnn_lc_errors = np.std(time_deltas_cnn_lc_array, axis=0)
+
+cnn_dense_means = np.mean(time_deltas_cnn_dense_array, axis=0)
+cnn_dense_errors = np.std(time_deltas_cnn_dense_array, axis=0)

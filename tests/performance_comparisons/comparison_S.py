@@ -33,29 +33,31 @@ test_per_setting = 10
 
 # dimensions (static)
 k=2
-Nrules = 4
+N = 32
 T = 32
+Nrules = 4
 rules = np.sort(np.random.choice(
     range(256),
     size=Nrules,
     replace=False))
-S = 32
+rule_alloc = np.random.randint(
+    Nrules,size=N)
 
 # %% dynamic values
 
-N_list = np.arange(32,256+32,32)
-rule_alloc_list = [np.random.randint(
-    Nrules,size=N) for N in N_list]
+# unique rules (dynamic)
+power=10
+S_list = np.logspace(0, power, power+1, base=2, dtype=int)
 
 # initial configuration (sample-dependent)
-init_configs_list = [np.random.randint(k,size=(S,1,N)) for N in N_list]
+init_configs_list = [np.random.randint(k,size=(S,1,N)) for S in S_list]
 
 # %% initialise and run cellpylib
 
 time_deltas_cpl_list = []
 for test_idx in range(test_per_setting):
     time_deltas_cpl = []
-    for rule_alloc, init_configs in zip(rule_alloc_list, init_configs_list):
+    for S, init_configs in zip(S_list, init_configs_list):
         print(f"Working on test number {test_idx+1}/{test_per_setting}", end='\r')
         time_start = time.time()
         for init_config in init_configs:
@@ -75,27 +77,25 @@ time_deltas_cpl_array = np.array(time_deltas_cpl_list)
 
 cpl_means = np.mean(time_deltas_cpl_array, axis=0)
 cpl_errors = np.std(time_deltas_cpl_array, axis=0)
-plt.errorbar(N_list, cpl_means, yerr=cpl_errors, fmt='o', capsize=5)
-# plt.xscale('log', base=2)
+plt.errorbar(S_list, cpl_means, yerr=cpl_errors, fmt='o', capsize=5)
+plt.xscale('log', base=2)
 
 # %% initialise CNN class
 
 # model with perfect weights and biases
 train_triplet_id = False
 nuCA = NucaEmulator(
-    N_list[0], rules=rules, timesteps=1,
+    N, rules=rules, timesteps=1,
     activation=None,
     train_triplet_id=train_triplet_id,
-    rule_alloc=rule_alloc_list[0])
+    rule_alloc=rule_alloc)
 
 # %% run locally connected CNNs
 
 time_deltas_cnn_lc_list = []
 for test_idx in range(test_per_setting):
     time_deltas_cnn_lc = []
-    for N, init_configs, rule_alloc in zip(N_list, init_configs_list, rule_alloc_list):
-        nuCA.N = N
-        nuCA.rule_alloc = rule_alloc
+    for S, init_configs in zip(S_list, init_configs_list):
         cnn_lc = nuCA.model()
         input = np.transpose(init_configs, (0, 2, 1))
         diagram_cnn_lc = input
@@ -119,8 +119,8 @@ time_deltas_cnn_lc_array = np.array(time_deltas_cnn_lc_list)
 
 cnn_lc_means = np.mean(time_deltas_cnn_lc_array, axis=0)
 cnn_lc_errors = np.std(time_deltas_cnn_lc_array, axis=0)
-plt.errorbar(N_list, cnn_lc_means, yerr=cnn_lc_errors, fmt='o', capsize=5)
-# plt.xscale('log', base=2)
+plt.errorbar(S_list, cnn_lc_means, yerr=cnn_lc_errors, fmt='o', capsize=5)
+plt.xscale('log', base=2)
 
 
 # %% run locally connected CNNs
@@ -128,9 +128,7 @@ plt.errorbar(N_list, cnn_lc_means, yerr=cnn_lc_errors, fmt='o', capsize=5)
 time_deltas_cnn_dense_list = []
 for test_idx in range(test_per_setting):
     time_deltas_cnn_dense = []
-    for N, init_configs, rule_alloc in zip(N_list, init_configs_list, rule_alloc_list):
-        nuCA.N = N
-        nuCA.rule_alloc = rule_alloc
+    for S, init_configs in zip(S_list, init_configs_list):
         cnn_dense = nuCA.model_dense()
         input = np.transpose(init_configs, (0, 2, 1))
         diagram_cnn_dense = input
@@ -154,34 +152,35 @@ time_deltas_cnn_dense_array = np.array(time_deltas_cnn_dense_list)
 
 cnn_dense_means = np.mean(time_deltas_cnn_dense_array, axis=0)
 cnn_dense_errors = np.std(time_deltas_cnn_dense_array, axis=0)
-plt.errorbar(N_list, cnn_dense_means, yerr=cnn_dense_errors, fmt='o', capsize=5)
-# plt.xscale('log', base=2)
+plt.errorbar(S_list, cnn_dense_means, yerr=cnn_dense_errors, fmt='o', capsize=5)
+plt.xscale('log', base=2)
 
 
 # %% master plot (full comparison)
 
 SAVEFIG=True
-savename=f"nuca-comparison-N-T{T}_Nrules{Nrules}_S{S}_avg-from-{test_per_setting}.pdf"
+savename=f"nuca-comparison-S-N{N}_T{T}_Nrules{Nrules}_avg-from-{test_per_setting}.pdf"
 
 # setup
 width=7; height=3
 labelsize = 14
 fig, ax = plt.subplots(1,1,figsize=(width,height))
-jitter_factor = 1
+jitter_factor = 1.05
 
 # plot
-ax.errorbar(N_list - jitter_factor, cpl_means, yerr=cpl_errors, fmt='+', capsize=5, label='CellPyLib')
-ax.errorbar(N_list, cnn_lc_means, yerr=cnn_lc_errors, fmt='o', capsize=5, label='CNN (locally connected)')
-ax.errorbar(N_list + jitter_factor, cnn_dense_means, yerr=cnn_dense_errors, fmt='x', capsize=5, label='CNN (densely connected)')
+ax.errorbar(S_list, cpl_means, yerr=cpl_errors, fmt='+', capsize=5, label='CellPyLib')
+ax.errorbar(S_list/jitter_factor, cnn_lc_means, yerr=cnn_lc_errors, fmt='o', capsize=5, label='CNN (locally connected)')
+ax.errorbar(S_list*jitter_factor, cnn_dense_means, yerr=cnn_dense_errors, fmt='x', capsize=5, label='CNN (densely connected)')
 
 # aesthetics and labels
-ax.set_title(f"Computation time for {S} $\\nu$CAs with {Nrules} rules over {T} timesteps", size=labelsize+2)
-# ax.set_xscale('log', base=2)
+ax.set_title(f"Computation time of $\\nu$CAs of {N} cells, {Nrules} rules, {T} timesteps", size=labelsize+2)
+ax.set_xscale('log', base=2)
+ax.set_yscale('log')
 ax.legend(ncols=3)
-ax.set_xticks(N_list)
-ax.set_ylim([0,11])
-ax.set_yticks([0, 2, 4, 6, 8, 10])
-ax.set_xlabel(f'Number of cells $N$', size=labelsize)
+ax.set_xticks(S_list)
+ax.set_ylim([1e-2, 5e2])
+ax.set_yticks([1e-2, 1e-1, 1e0, 1e1, 1e2])
+ax.set_xlabel(f'Number of samples $S$', size=labelsize)
 ax.set_ylabel(f'Time to compute (s)', size=labelsize)
 ax.tick_params(axis='both', which='major', labelsize=labelsize-2)
 
@@ -190,18 +189,28 @@ if SAVEFIG:
 
 # %% save data for future reference
 
-dataname = f"nuca-comparison-N-T{T}_Nrules{Nrules}_S{S}_avg-from-{test_per_setting}.npy"
+dataname = f"nuca-comparison-S-N{N}_T{T}_Nrules{Nrules}_avg-from-{test_per_setting}.npy"
 
 with open(dir_data+dataname, 'wb') as f:
     # note the order!
-    np.save(f, N_list)
+    np.save(f, S_list)
     np.save(f, time_deltas_cpl_array)
     np.save(f, time_deltas_cnn_lc_array)
     np.save(f, time_deltas_cnn_dense_array)
 
 # with open(dir_data+dataname, 'rb') as f:
-#     a = np.load(f)
-#     b = np.load(f)
-#     c = np.load(f)
-#     d = np.load(f)
+#     S_list = np.load(f)
+#     time_deltas_cpl_array = np.load(f)
+#     time_deltas_cnn_lc_array = np.load(f)
+#     time_deltas_cnn_dense_array = np.load(f)
+
+# calculate relevant quantities
+cpl_means = np.mean(time_deltas_cpl_array, axis=0)
+cpl_errors = np.std(time_deltas_cpl_array, axis=0)
+
+cnn_lc_means = np.mean(time_deltas_cnn_lc_array, axis=0)
+cnn_lc_errors = np.std(time_deltas_cnn_lc_array, axis=0)
+
+cnn_dense_means = np.mean(time_deltas_cnn_dense_array, axis=0)
+cnn_dense_errors = np.std(time_deltas_cnn_dense_array, axis=0)
 # %%
