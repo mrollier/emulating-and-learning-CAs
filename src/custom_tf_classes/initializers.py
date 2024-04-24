@@ -66,7 +66,7 @@ class WeightsRuleAllocation(Initializer):
     Used to initialise the weights of the LocallyConnected1D layer,
     which picks out the required cells in a non-uniform situation.
     """
-    def __init__(self, Nrules, rule_alloc, dense=True):
+    def __init__(self, Nrules, rule_alloc, dense=False):
         N = len(rule_alloc)
         alloc_one_hot = tf.one_hot(rule_alloc, Nrules)
         if not dense:
