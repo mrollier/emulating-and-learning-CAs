@@ -14,11 +14,11 @@ plt.rcParams['text.usetex'] = True
 # particular
 import cellpylib as cpl
 
-%load_ext autoreload
-%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 # choose appropriate directory
-dir_figs = '../../figures/nuca/'
+dir_figs = '../figures/nuca/'
 
 # %%
 
@@ -42,6 +42,10 @@ rule_alloc_2D = np.zeros((N,T))
 rule_alloc_2D[::2] = 1
 rule_alloc_2D = np.array(rule_alloc_2D, dtype=int)
 
+rule_alloc = np.random.randint(2, size=N)
+for t in range(T):
+    rule_alloc_2D[t] = rule_alloc
+
 # %% initialise and run cellpylib
 
 diagram_cpl = cpl.evolve(
@@ -54,7 +58,7 @@ diagram_cpl = cpl.evolve(
 # %% plot
 
 SAVEFIG = False
-savename = f"acri-example-rules{rules[0]}_{rules[1]}.pdf"
+savename = f"acri-example-rules{rules[0]}_{rules[1]}_vertical.pdf"
 
 labelsize=14
 fig, axs = plt.subplots(1,2,figsize=(5,3))
