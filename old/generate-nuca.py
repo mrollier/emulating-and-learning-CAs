@@ -21,26 +21,29 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras import Input
 
 import sys
-sys.path.append('C:\\Users\\mrollier\\OneDrive - UGent\\Research\\Cellular Automata\\CA Programming\\learning_automata')
-from cnn_models import nuca_emulator_1D
-from custom_tf_classes import WeightsBiasesHistory
+sys.path.append('C:\\Users\\mrollier\\OneDrive - UGent\\Research\\Cellular Automata\\CA Programming\\learning_automata\\src')
+# from nn import nuca_emulator_1D
+from nn.nuca import NucaEmulator
+from custom_tf_classes.callbacks import WeightsBiasesHistory
 
 from keras.callbacks import EarlyStopping, Callback
 # from keras import regularizers
 
 import time
 
-images_dir = "./figures"
+images_dir = "../figures/nuca"
 
 
 # %%
 
-vert=3
-horz=3
-fig, axs = plt.subplots(vert,horz,figsize=(9,9))
+SAVEFIG=True
+
+vert=6
+horz=6
+fig, axs = plt.subplots(vert,horz,figsize=(9,6))
 
 N = 32
-T = N # // 2
+T = N // 2
 
 for i in range(vert):
     for j in range(horz):
@@ -59,7 +62,8 @@ for i in range(vert):
         timesteps=1
         output_hidden=False
 
-        nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden)
+        nuca_cnn = NucaEmulator(N, rules, timesteps=timesteps,
+                                rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden).model()
         nuca_cnn.compile()
 
         diagram = np.empty((N,T))
@@ -70,10 +74,11 @@ for i in range(vert):
 
 
         axs[i,j].imshow(diagram.T, cmap='Greys')
-        # axs[i,j].set_title(title)
-        axs[i,j].set_title(None)
+        axs[i,j].set_title(title)
+        # axs[i,j].set_title(None)
         axs[i,j].set_xticks([])
         axs[i,j].set_yticks([])
 
-plt.savefig(f'{images_dir}/examples-of-nucas_{vert}x{horz}.pdf', bbox_inches='tight')
+if SAVEFIG:
+    plt.savefig(f'{images_dir}/examples-of-nucas_{vert}x{horz}.pdf', bbox_inches='tight')
 # %%

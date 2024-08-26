@@ -31,50 +31,50 @@ from keras.callbacks import EarlyStopping, Callback
 
 import time
 
-images_dir = "./figures"
+images_dir = "../figures/eca"
 
 
 # %%
 
-vert=3
-horz=3
-fig, axs = plt.subplots(vert,horz,figsize=(9,9))
+SAVEFIG = True
+
+vert=6
+horz=6
+fig, axs = plt.subplots(vert,horz,figsize=(9,6))
 
 N = 32
-T = N # // 2
+T = N // 2
 
 for i in range(vert):
     for j in range(horz):
 
-        rule1 = np.random.randint(256)
-        rule2 = np.random.randint(256)
-        title = f"{rule1} and {rule2}"
+        rule = np.random.randint(256)
+        title = f"rule {rule}"
 
         print(f"Working on {title}.     ", end='\r')
 
         init_config = np.random.randint(2, size=(1,N))
-        rule_alloc = np.random.randint(2, size=N)
-
-        rules = [rule1, rule2]
 
         timesteps=1
         output_hidden=False
 
-        nuca_cnn = nuca_emulator_1D(N, rules, timesteps=timesteps, rule_alloc=rule_alloc, train_triplet_id=False, output_hidden=output_hidden)
-        nuca_cnn.compile()
+        eca_cnn = EcaEmulator(N, rule, timesteps=timesteps,
+                                train_triplet_id=False, output_hidden=output_hidden).model()
+        eca_cnn.compile()
 
         diagram = np.empty((N,T))
         diagram[:,0] = init_config[0]
         for t in range(1,T):
-            next_config = nuca_cnn.predict(diagram[:,t-1:t].T, verbose=0)[0]
+            next_config = eca_cnn.predict(diagram[:,t-1:t].T, verbose=0)[0]
             diagram[:,t] = next_config[:,0]
 
 
         axs[i,j].imshow(diagram.T, cmap='Greys')
-        # axs[i,j].set_title(title)
-        axs[i,j].set_title(None)
+        axs[i,j].set_title(title)
+        # axs[i,j].set_title(None)
         axs[i,j].set_xticks([])
         axs[i,j].set_yticks([])
 
-plt.savefig(f'{images_dir}/examples-of-nucas_{vert}x{horz}.pdf', bbox_inches='tight')
+if SAVEFIG:
+    plt.savefig(f'{images_dir}/examples-of-ecas_{vert}x{horz}.pdf', bbox_inches='tight')
 # %%
