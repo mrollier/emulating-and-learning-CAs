@@ -1,0 +1,13 @@
+# Auto detect text files and perform LF normalisation
+* text=auto
+
+# Binary data: the golden outputs, decoded figure inputs and benchmark
+# results are hashed and compared byte for byte.
+*.npy binary
+*.npz binary
+*.pdf binary
+*.png binary
+
+# Notebooks keep LF endings on every platform, so executing them on Windows
+# does not produce whole-file diffs.
+*.ipynb text eol=lf

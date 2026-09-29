@@ -1,0 +1,17 @@
+{
+  "script": "scripts/benchmark_published.py",
+  "date": "2026-09-29 17:57:59",
+  "seed": 20260929,
+  "repeats": 10,
+  "quick": false,
+  "python": "3.11.5",
+  "executable": "C:\\Users\\mrollier\\AppData\\Local\\venvs\\ca-emulators\\Scripts\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 158 Stepping 13, GenuineIntel",
+  "cpu_count": 12,
+  "tensorflow": "2.14.0",
+  "numpy": "1.26.4",
+  "cellpylib": "2.4.0",
+  "clock": "time.perf_counter",
+  "scenario": "S"
+}

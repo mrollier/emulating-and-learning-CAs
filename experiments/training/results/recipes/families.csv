@@ -1,0 +1,7 @@
+config,"f000=0,f111=0","f000=0,f111=1","f000=1,f111=0","f000=1,f111=1",linearly separable,not separable,affine (XOR-type),Wolfram 1,Wolfram 2,Wolfram 3,Wolfram 4
+recipe_minimal,1,1,1,1,1,1,1,1,1,1,1
+recipe_minimal_leaky,0.9999,1,1,0.9998,1,0.9998,1,1,0.9999,1,1
+recipe_minimal_01,1,1,1,0.9999,1,0.9999,1,1,1,0.9997,1
+head_only_2024,0.9823,0.9872,0.9852,0.979,0.9996,0.9723,0.9771,0.9967,0.9888,0.951,0.947
+recipe_minimal_lr0.02,1,1,1,1,1,1,1,1,1,1,1
+recipe_fast,1,0.9999,1,1,1,0.9999,0.9995,1,1,0.9997,1

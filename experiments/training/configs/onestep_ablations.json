@@ -1,0 +1,31 @@
+{
+  "name": "onestep_ablations",
+  "description": "Phase A1: one-factor-at-a-time ablations around the 2024 recipe (minimal 41-parameter network, one-step training). Every configuration changes one thing with respect to 'nopre' (the 2024 recipe without its pretraining loop); 'baseline_2024' is the full 2024 recipe.",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 32,
+  "defaults": {},
+  "configs": [
+    {"name": "baseline_2024", "pretrain": true},
+    {"name": "nopre"},
+    {"name": "data_full", "data": "full"},
+    {"name": "batch8", "batch": 8},
+    {"name": "bias0.1", "bias_init": 0.1},
+    {"name": "enc_pm1", "enc": "pm1"},
+    {"name": "act_leaky", "act": "leaky_relu"},
+    {"name": "act_softplus", "act": "softplus"},
+    {"name": "head_tanh_mse", "head": "tanh_mse"},
+    {"name": "head_sigmoid_mse", "head": "sigmoid_mse"},
+    {"name": "head_sigmoid_bce", "head": "sigmoid_bce"},
+    {"name": "head_linear_mse", "head": "linear_mse"},
+    {"name": "lr0.001", "lr": 0.001},
+    {"name": "lr0.02", "lr": 0.02},
+    {"name": "lr0.05", "lr": 0.05},
+    {"name": "steps4x", "steps": 10240}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 4,
+    "overrides": {"steps": 256, "eval_every": 32, "pretrain_candidates": 4, "cl_steps": 20}
+  }
+}

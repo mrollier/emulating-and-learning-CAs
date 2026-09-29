@@ -1,0 +1,76 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "Emulating and learning cellular automata"
+abstract: >-
+  Exact emulation of elementary and non-uniform cellular automata by convolutional
+  neural networks with analytically set weights, with the scripts and data that
+  reproduce the figures of the accompanying paper.
+type: software
+authors:
+  - family-names: Rollier
+    given-names: Michiel
+    email: michiel.rollier@ugent.be
+    affiliation: Ghent University
+repository-code: "https://github.com/mrollier/emulating-and-learning-CAs"
+license: MIT
+version: 1.0.0
+date-released: 2026-09-29
+keywords:
+  - cellular automata
+  - non-uniform cellular automata
+  - convolutional neural networks
+  - TensorFlow
+preferred-citation:
+  type: conference-paper
+  title: "Efficient Simulation of Non-uniform Cellular Automata with a Convolutional Neural Network"
+  authors:
+    - family-names: Rollier
+      given-names: Michiel
+    - family-names: Daly
+      given-names: Aisling J.
+    - family-names: Bruno
+      given-names: Odemir M.
+    - family-names: Baetens
+      given-names: Jan M.
+  collection-title: "Cellular Automata. ACRI 2024"
+  collection-type: proceedings
+  editors:
+    - family-names: Bagnoli
+      given-names: Franco
+    - family-names: Baetens
+      given-names: Jan
+    - family-names: Bandini
+      given-names: Stefania
+    - family-names: Matteuzzi
+      given-names: Tommaso
+  series: "Lecture Notes in Computer Science"
+  volume: 14978
+  start: 121
+  end: 131
+  year: 2024
+  publisher:
+    name: Springer Nature Switzerland
+  doi: 10.1007/978-3-031-71552-5_11
+  url: "https://arxiv.org/abs/2409.02722"
+references:
+  - type: thesis
+    title: "The rich landscape of iterated simplicity: cellular automata and network automata"
+    authors:
+      - family-names: Rollier
+        given-names: Michiel
+    thesis-type: "PhD thesis"
+    institution:
+      name: "Ghent University, Department of Data Analysis and Mathematical Modelling"
+    year: 2026
+    isbn: "9789493542495"
+  - type: article
+    title: "Cellular automata as convolutional neural networks"
+    authors:
+      - family-names: Gilpin
+        given-names: William
+    journal: "Physical Review E"
+    volume: 100
+    issue: 3
+    start: "032402"
+    year: 2019
+    doi: 10.1103/PhysRevE.100.032402

@@ -1,0 +1,22 @@
+{
+  "name": "width_depth_full",
+  "description": "Workstation version of phase A3: width H up to 128 and depth D up to 2 for three heads/recipes (the 2024 head, the sigmoid/BCE head with 2024 settings otherwise, and the recommended recipe), 64 seeds per rule, plus the 2024 head with the pretraining filter at every width.",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 64,
+  "defaults": {},
+  "configs": [
+    {"name": "wdf_{head}_H{width}_D{depth}",
+     "grid": {"head": ["relu_tanh_mse", "sigmoid_bce"], "width": [8, 16, 32, 64, 128],
+              "depth": [0, 1, 2]}},
+    {"name": "wdf_recipe_H{width}_D{depth}", "head": "sigmoid_bce", "enc": "pm1",
+     "act": "softplus", "grid": {"width": [4, 8, 16, 32, 64, 128], "depth": [0, 1, 2]}},
+    {"name": "wdf_2024pretrain_H{width}", "pretrain": true,
+     "grid": {"width": [8, 16, 32, 64]}}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 1,
+    "overrides": {"steps": 64, "eval_every": 32, "cl_steps": 10, "pretrain_candidates": 4}
+  }
+}

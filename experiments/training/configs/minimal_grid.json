@@ -1,0 +1,20 @@
+{
+  "name": "minimal_grid",
+  "description": "Phase A2: full factorial over output head x input encoding x bias initialisation x hidden activation for the minimal network (H = 8, D = 0), one-step training with the 2024 optimiser settings (Adam 0.005, 64 random configurations of 32 cells per batch, 2560 steps, no pretraining).",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 32,
+  "defaults": {},
+  "configs": [
+    {"name": "{head}_{enc}_b{bias_init}_{act}",
+     "grid": {"head": ["relu_tanh_mse", "sigmoid_bce", "sigmoid_mse", "linear_mse"],
+              "enc": ["01", "pm1"],
+              "bias_init": [0.0, 0.1],
+              "act": ["relu", "leaky_relu", "softplus"]}}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 2,
+    "overrides": {"steps": 256, "eval_every": 32, "cl_steps": 20}
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "spacetime",
+  "description": "Phase B: learning from spacetime diagrams. Each step draws 8 random configurations of 16 cells per network, rolls the network out T times (backpropagation through time) and compares with the exact diagram, on every frame ('all') or on the final frame only ('final'); optionally with a curriculum over T (1, 2, 4, ..., T in equal stages) and a straight-through binarisation between steps (ste). Base network: the recommended minimal recipe (sigmoid/BCE head, {-1,+1} inputs, softplus, H = 8).",
+  "base_seed": 2024,
+  "rules": "representatives",
+  "seeds": 8,
+  "defaults": {"mode": "configs", "head": "sigmoid_bce", "enc": "pm1", "act": "softplus",
+               "batch": 8, "cells": 16, "steps": 2560, "eval_every": 64},
+  "configs": [
+    {"name": "st_T{T}_{frames}", "grid": {"T": [1, 2, 4, 8], "frames": ["all", "final"]}},
+    {"name": "st_T8_{frames}_curriculum", "T": 8, "curriculum": true,
+     "grid": {"frames": ["all", "final"]}},
+    {"name": "st_T{T}_final_ste", "ste": true, "frames": "final", "grid": {"T": [4, 8]}},
+    {"name": "st_T8_all_ste", "T": 8, "ste": true, "frames": "all"},
+    {"name": "st_2024head_T{T}_all", "head": "relu_tanh_mse", "enc": "01", "act": "relu",
+     "frames": "all", "grid": {"T": [1, 4]}},
+    {"name": "st_linear_T{T}_all", "head": "linear_mse", "frames": "all", "grid": {"T": [1, 4]}},
+    {"name": "st_wide_T8_{frames}", "T": 8, "width": 16, "depth": 1,
+     "grid": {"frames": ["all", "final"]}}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 1,
+    "overrides": {"steps": 64, "eval_every": 32, "cl_steps": 10}
+  }
+}
