@@ -1,0 +1,13 @@
+# Versions of the ACRI 2024 paper (Python 3.11). Install with
+#   pip install -r requirements.txt && pip install -e .
+# On a Linux GPU machine, use `tensorflow[and-cuda]==2.14.0` instead, or the
+# official Docker image tensorflow/tensorflow:2.14.0-gpu.
+tensorflow==2.14.0
+keras==2.14.0
+numpy==1.26.4
+cellpylib==2.4.0
+matplotlib==3.8.3
+pytest==8.3.3
+nbformat>=5.10
+nbclient>=0.10
+ipykernel>=6.25
