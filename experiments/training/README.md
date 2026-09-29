@@ -222,3 +222,23 @@ The GPU path has not been run by the author of this study (the laptop has no
 NVIDIA GPU). The code uses only standard TF ops (no custom kernels), and the
 test suite runs on the GPU too. If XLA causes trouble there, pass
 `--jit off`.
+
+## Laptop instead of the workstation (CPU only)
+
+`laptop.sh` runs what a laptop CPU can do in a few hours (measured costs: about
+11-21 ms per minimal network, 0.4-1.6 s per wide one, about 2 s per spacetime run
+at T = 8):
+
+- the high-seed sweeps in full: `recipes` at 1024 seeds and `minimal_grid`,
+  `onestep_ablations` and `recipe_robustness` at 128 seeds (about 14 CPU hours;
+  summaries in `results/<sweep>-large/`);
+- the points missing from the local sweeps, completed in place: `sigmoid_bce`
+  H = 32, 64 at depth 1-2 with 8 seeds, and the wide network at T = 8
+  (`st_wide_T8_all`, `st_wide_T8_final`).
+
+`width_depth_full` and `spacetime_full` stay workstation-only: on a CPU they
+would take hundreds of hours.
+
+```bash
+WORKERS=4 bash experiments/training/laptop.sh      # from Git Bash, with the project's Python on PATH
+```
