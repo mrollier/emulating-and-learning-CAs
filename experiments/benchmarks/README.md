@@ -138,6 +138,19 @@ python experiments/benchmarks/run.py --scenarios N --methods numpy,numpy_lut,xla
 python experiments/benchmarks/run.py --scenarios S --ranges core --methods all --tag s_all
 ```
 
+On a machine with a GPU (the Linux workstation, see `docs/workstation.md`),
+the default `--device cpu` hides the GPU from every worker
+(`CUDA_VISIBLE_DEVICES=-1`), so the results measure the CPU and stay
+comparable with a laptop run. `--device gpu` leaves the GPU visible and writes
+to `results/benchmark_full_gpu.csv` (plot it with
+`plot.py --csv experiments/benchmarks/results/benchmark_full_gpu.csv`); the
+CSV records the device and the number of GPUs TensorFlow saw.
+
+```bash
+python experiments/benchmarks/run.py --all                                   # CPU
+python experiments/benchmarks/run.py --all --device gpu --threads default    # GPU extra
+```
+
 The protocol options (`--repeats`, `--min-time`, `--budget`, `--cold-budget`,
 `--core-budget`, `--core-cold-budget`, `--max-selector-mb`) are listed by
 `python experiments/benchmarks/run.py --help`.

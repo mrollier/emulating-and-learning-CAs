@@ -44,6 +44,9 @@ REPO = HERE.parents[1]
 RESULTS = HERE / "results"
 MARKER = "@@BENCHMARK-RESULT@@"
 THREAD_SETTINGS = ("default", "single")
+#: "cpu" hides every GPU from the workers (CUDA_VISIBLE_DEVICES=-1), so that a
+#: run on a machine with a GPU still measures the CPU; "gpu" leaves it visible.
+DEVICES = ("cpu", "gpu")
 THREAD_VARS = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
                "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS")
 #: Pure-Python methods, run in the default thread setting only.
@@ -108,6 +111,7 @@ class Settings:
     core_cold_budget: float = 600.0
     timeout_margin: float = 180.0  # s, added to the budgets for the hard timeout
     max_selector_mb: float = 512.0
+    device: str = "cpu"            # "cpu" or "gpu", see DEVICES
 
     def budgets(self, rng: str):
         return (self.core_budget, self.core_cold_budget) if rng == "core" else (
@@ -197,6 +201,10 @@ def worker(spec: dict) -> dict:
     if spec["method"] == "cellpylib":
         import cellpylib  # noqa: F401  (imports matplotlib: an import cost, not a cold-call cost)
     row["import_s"] = time.perf_counter() - t0
+    row["gpus"] = len(tf.config.list_physical_devices("GPU"))
+    if spec.get("device") == "gpu" and not row["gpus"]:
+        row["note"] = "device gpu requested, but TensorFlow sees no GPU"
+        return row
     row["intra_threads"] = tf.config.threading.get_intra_op_parallelism_threads()
     row["inter_threads"] = tf.config.threading.get_inter_op_parallelism_threads()
 
@@ -252,7 +260,10 @@ def worker_info() -> dict:
             "numpy": np.__version__, "cellpylib": getattr(cellpylib, "__version__", "?"),
             "tf_default_intra_threads": tf.config.threading.get_intra_op_parallelism_threads(),
             "tf_default_inter_threads": tf.config.threading.get_inter_op_parallelism_threads(),
-            "TF_ENABLE_ONEDNN_OPTS": os.environ.get("TF_ENABLE_ONEDNN_OPTS", "(unset)")}
+            "TF_ENABLE_ONEDNN_OPTS": os.environ.get("TF_ENABLE_ONEDNN_OPTS", "(unset)"),
+            "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", "(unset)"),
+            "gpus": [tf.config.experimental.get_device_details(d).get("device_name", d.name)
+                     for d in tf.config.list_physical_devices("GPU")]}
     try:
         import ca_emulators
         info["ca_emulators"] = ca_emulators.__version__
@@ -285,14 +296,15 @@ def _numpy_blas(np):
 
 COLUMNS = [
     "tag", "timestamp", "scenario", "vary", "value", "range", "method", "driver", "selector",
-    "threads", "N", "n_rules", "T", "n_updates", "S", "seed", "status", "note", "correct",
+    "threads", "device", "gpus", "N", "n_rules", "T", "n_updates", "S", "seed", "status", "note",
+    "correct",
     "import_s", "build_s", "first_call_s", "cold_s", "warm_median_s", "warm_q1_s", "warm_q3_s",
     "warm_min_s", "warm_max_s", "repeats", "number", "n_params", "selector_mb",
     "intra_threads", "inter_threads", "peak_memory_mb", "wall_s",
 ]
 
 
-def child_env(threads: str) -> dict:
+def child_env(threads: str, device: str = "cpu") -> dict:
     env = dict(os.environ)
     env.update(PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8", TF_CPP_MIN_LOG_LEVEL="2")
     for var in THREAD_VARS:
@@ -300,6 +312,8 @@ def child_env(threads: str) -> dict:
             env[var] = "1"
         else:
             env.pop(var, None)
+    if device == "cpu":
+        env["CUDA_VISIBLE_DEVICES"] = "-1"
     return env
 
 
@@ -373,7 +387,7 @@ def base_row(tag, scenario, value, rng, thread, method: bm.Method, case: bm.Case
     row = dict(tag=tag, timestamp=dt.datetime.now().isoformat(timespec="seconds"),
                scenario=scenario.name, vary=scenario.vary, value=value, range=rng,
                method=method.name, driver=method.driver, selector=method.selector, threads=thread,
-               N=case.N, n_rules=case.n_rules, T=case.T, n_updates=case.n_updates, S=case.S,
+               device=settings.device, N=case.N, n_rules=case.n_rules, T=case.T, n_updates=case.n_updates, S=case.S,
                seed=case.seed)
     if method.uses_tf:
         row["selector_mb"] = round(method.kernel_bytes(case) / 2 ** 20, 3)
@@ -397,9 +411,11 @@ def run_job(tag, scenario, value, rng, thread, method, settings: Settings, chain
             row.update(status="skipped_predicted", note=reason)
             return row
     spec = dict(method=method.name, case=asdict(case), threads=thread, repeats=settings.repeats,
-                min_time=settings.min_time, budget=budget, cold_budget=cold_budget)
+                min_time=settings.min_time, budget=budget, cold_budget=cold_budget,
+                device=settings.device)
     timeout = budget + cold_budget + settings.timeout_margin
-    stdout, stderr, code, wall = run_subprocess(["--worker"], json.dumps(spec), child_env(thread), timeout)
+    stdout, stderr, code, wall = run_subprocess(["--worker"], json.dumps(spec),
+                                                child_env(thread, settings.device), timeout)
     result = parse_result(stdout)
     row["wall_s"] = round(wall, 2)
     if code is None:
@@ -505,6 +521,9 @@ def parse_args(argv=None):
     what.add_argument("--methods", default="default",
                       help="'default', 'all' or a comma-separated list, e.g. numpy,xla:elem")
     what.add_argument("--threads", default="default,single", help="default, single, or both")
+    what.add_argument("--device", choices=DEVICES, default="cpu",
+                      help="cpu (default: GPUs hidden from the workers) or gpu; a gpu run writes "
+                      "to benchmark_<tag>_gpu.csv")
     how = p.add_argument_group("protocol (defaults: full run)")
     how.add_argument("--repeats", type=int)
     how.add_argument("--min-time", type=float, help="s, minimum duration of one warm repeat")
@@ -535,9 +554,12 @@ def resolve(args):
             raise SystemExit(f"unknown scenarios {sorted(unknown)}; choose from {list(scenarios)}")
         scenarios = {n: scenarios[n] for n in names}
     overrides = {k: getattr(args, k) for k in ("repeats", "min_time", "budget", "cold_budget",
-                                               "core_budget", "core_cold_budget", "max_selector_mb")
+                                               "core_budget", "core_cold_budget", "max_selector_mb",
+                                               "device")
                  if getattr(args, k) is not None}
     settings = Settings(**{**asdict(settings), **overrides})
+    if settings.device == "gpu" and not args.tag:
+        tag += "_gpu"
     if args.methods == "default":
         names = list(bm.DEFAULT_METHODS)
     elif args.methods == "all":
@@ -591,7 +613,7 @@ def main(argv=None):
             csv_path.unlink()
     folder.mkdir(parents=True, exist_ok=True)
 
-    stdout, stderr, code, _ = run_subprocess(["--info"], "", child_env("default"), 300)
+    stdout, stderr, code, _ = run_subprocess(["--info"], "", child_env("default", settings.device), 300)
     software = parse_result(stdout)
     if software is None:
         raise SystemExit(f"the worker cannot start (exit {code}):\n{stderr[-2000:]}")
