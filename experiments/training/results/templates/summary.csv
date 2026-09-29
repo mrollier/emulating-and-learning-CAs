@@ -1,0 +1,4 @@
+config,exact_networks,template_recovered,units_firing_on_1,units_firing_on_0,units_firing_on_2_to_6,units_firing_on_7_or_8,mean_firing_set,median_rank,rank_8,mean_units_used
+baseline_2024,900,0,0.04139,0.1571,0.6132,0.1883,4.015,7,0.2111,6.721
+sigmoid_bce_01_b0.0_relu,1005,0,0.02388,0.2037,0.5816,0.1908,3.956,6,0.1045,6.317
+recipe_minimal,1024,0,0.001343,0.0008545,0.9762,0.02161,4.291,8,0.9863,7.972

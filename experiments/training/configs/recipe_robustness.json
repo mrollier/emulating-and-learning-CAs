@@ -1,0 +1,34 @@
+{
+  "name": "recipe_robustness",
+  "description": "Phase A5: how sensitive is the recommended minimal recipe (sigmoid/BCE head, {-1,+1} inputs, softplus, zero biases) to the optimiser and data settings? One factor at a time around 'recipe_minimal' (Adam 0.005, 64 random configurations of 32 cells, 2560 steps).",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 32,
+  "defaults": {"head": "sigmoid_bce", "enc": "pm1", "act": "softplus"},
+  "configs": [
+    {"name": "rm_lr0.001", "lr": 0.001},
+    {"name": "rm_lr0.02", "lr": 0.02},
+    {"name": "rm_lr0.05", "lr": 0.05},
+    {"name": "rm_lr0.1", "lr": 0.1},
+    {"name": "rm_steps320", "steps": 320, "eval_every": 32},
+    {"name": "rm_steps640", "steps": 640, "eval_every": 32},
+    {"name": "rm_steps1280", "steps": 1280},
+    {"name": "rm_full", "data": "full"},
+    {"name": "rm_batch1", "batch": 1},
+    {"name": "rm_batch8", "batch": 8},
+    {"name": "rm_pretrain", "pretrain": true},
+    {"name": "rm_relu", "act": "relu"},
+    {"name": "rm_leaky", "act": "leaky_relu"},
+    {"name": "rm_linear_mse", "head": "linear_mse"},
+    {"name": "rm_sigmoid_mse", "head": "sigmoid_mse"},
+    {"name": "rm_tanh_mse", "head": "tanh_mse"},
+    {"name": "rm_relu_tanh_mse", "head": "relu_tanh_mse"},
+    {"name": "rm_width4", "width": 4},
+    {"name": "rm_width6", "width": 6}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 2,
+    "overrides": {"steps": 256, "eval_every": 32, "cl_steps": 20, "pretrain_candidates": 4}
+  }
+}

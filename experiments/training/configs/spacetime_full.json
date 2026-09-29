@@ -1,0 +1,26 @@
+{
+  "name": "spacetime_full",
+  "description": "Workstation version of phase B: all 256 rules x 32 seeds, larger training configurations (16 of 32 cells per step), T up to 16, twice the steps; the minimal recipe, the wide recipe and the 2024 head.",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 32,
+  "defaults": {"mode": "configs", "head": "sigmoid_bce", "enc": "pm1", "act": "softplus",
+               "batch": 16, "cells": 32, "steps": 5120, "eval_every": 128},
+  "configs": [
+    {"name": "stf_T{T}_{frames}", "grid": {"T": [1, 2, 4, 8, 16], "frames": ["all", "final"]}},
+    {"name": "stf_T{T}_{frames}_curriculum", "curriculum": true,
+     "grid": {"T": [8, 16], "frames": ["all", "final"]}},
+    {"name": "stf_T{T}_{frames}_ste", "ste": true,
+     "grid": {"T": [4, 8, 16], "frames": ["all", "final"]}},
+    {"name": "stf_2024head_T{T}_all", "head": "relu_tanh_mse", "enc": "01", "act": "relu",
+     "frames": "all", "grid": {"T": [1, 4, 8]}},
+    {"name": "stf_linear_T{T}_all", "head": "linear_mse", "frames": "all", "grid": {"T": [1, 4, 8]}},
+    {"name": "stf_wide_T{T}_{frames}", "width": 32, "depth": 1,
+     "grid": {"T": [4, 8, 16], "frames": ["all", "final"]}}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 1,
+    "overrides": {"steps": 64, "eval_every": 32, "cl_steps": 10}
+  }
+}

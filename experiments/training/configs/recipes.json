@@ -1,0 +1,66 @@
+{
+  "name": "recipes",
+  "description": "Phase A4: the candidate recipes for the minimal network at 128 seeds per rule (32768 runs each), to bound failure rates well below 1/8192: the runner-up combinations of phase A2, the 2024 recipe with only its output head replaced, and the recommended recipe with the learning rate raised after phase A5 ('recipe_minimal_lr0.02'; 'recipe_fast': lr 0.05 and 640 steps).",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 128,
+  "defaults": {
+    "head": "sigmoid_bce"
+  },
+  "configs": [
+    {
+      "name": "recipe_minimal",
+      "enc": "pm1",
+      "act": "softplus"
+    },
+    {
+      "name": "recipe_minimal_leaky",
+      "enc": "pm1",
+      "act": "leaky_relu",
+      "bias_init": 0.1
+    },
+    {
+      "name": "recipe_minimal_01",
+      "enc": "01",
+      "act": "softplus",
+      "bias_init": 0.1
+    },
+    {
+      "name": "head_only_2024",
+      "enc": "01",
+      "act": "relu"
+    },
+    {
+      "name": "recipe_minimal_lr0.02",
+      "enc": "pm1",
+      "act": "softplus",
+      "lr": 0.02
+    },
+    {
+      "name": "recipe_fast",
+      "enc": "pm1",
+      "act": "softplus",
+      "lr": 0.05,
+      "steps": 640,
+      "eval_every": 32
+    }
+  ],
+  "smoke": {
+    "rules": [
+      0,
+      1,
+      30,
+      54,
+      105,
+      110,
+      150,
+      232
+    ],
+    "seeds": 2,
+    "overrides": {
+      "steps": 256,
+      "eval_every": 32,
+      "cl_steps": 20
+    }
+  }
+}

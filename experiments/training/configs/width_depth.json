@@ -1,0 +1,19 @@
+{
+  "name": "width_depth",
+  "description": "Phase A3: over-parameterisation. Width H of the kernel-3 layer (and of the 1x1 layers) x number D of extra 1x1 ReLU layers (the receptive field stays 3), for the 2024 head and for the sigmoid/BCE head, otherwise the 2024 settings (01 inputs, zero biases, ReLU, Adam 0.005, 2560 steps, no pretraining).",
+  "base_seed": 2024,
+  "rules": "all",
+  "seeds": 16,
+  "defaults": {},
+  "configs": [
+    {"name": "{head}_H{width}_D{depth}",
+     "grid": {"head": ["relu_tanh_mse", "sigmoid_bce"],
+              "width": [8, 16, 32, 64],
+              "depth": [0, 1, 2]}}
+  ],
+  "smoke": {
+    "rules": [0, 1, 30, 54, 105, 110, 150, 232],
+    "seeds": 2,
+    "overrides": {"steps": 128, "eval_every": 32, "cl_steps": 10}
+  }
+}

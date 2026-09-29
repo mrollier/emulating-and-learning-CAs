@@ -1,0 +1,8 @@
+| rule | keras_runs | keras_exact | keras_closed_loop_given_exact | keras_mean_restarts | ensemble_runs | ensemble_exact | ensemble_closed_loop_given_exact | ensemble_mean_restarts |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 6 | 0 |  | 32 | 32 | 0 |  | 32 |
+| 30 | 6 | 0.6667 | 0.25 | 32 | 32 | 0.625 | 0.2 | 31 |
+| 54 | 6 | 1 | 0 | 26.67 | 32 | 0.6875 | 0.1818 | 30.38 |
+| 105 | 6 | 0.5 | 0 | 32 | 32 | 0.5938 | 0 | 32 |
+| 110 | 6 | 0.8333 | 0 | 30 | 32 | 0.875 | 0.03571 | 30.38 |
+| 150 | 6 | 0.6667 | 0.25 | 32 | 32 | 0.5625 | 0.2222 | 32 |

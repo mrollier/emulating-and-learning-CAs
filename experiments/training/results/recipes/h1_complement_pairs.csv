@@ -1,0 +1,7 @@
+config,pairs,success_f000_1,success_complement_f000_0,mean_diff,pairs_odd_worse,pairs_odd_better,reflection_pairs,reflection_mean_abs_diff,binomial_expected_abs_diff
+recipe_minimal,64,1,1,0,0,0,96,0,0
+recipe_minimal_leaky,64,0.9998,0.9999,-0.0001221,2,1,96,0.0002441,0.0001829
+recipe_minimal_01,64,0.9999,1,-0.0001221,1,0,96,8.138e-05,9.147e-05
+head_only_2024,64,0.979,0.9823,-0.003296,24,17,96,0.008301,0.007343
+recipe_minimal_lr0.02,64,1,1,0,0,0,96,0,0
+recipe_fast,64,1,1,0,0,0,96,0,0
