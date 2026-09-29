@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-09-29)
 
 A rebuild of the repository as a reproducibility package for the ACRI 2024 paper
 and Sec. 7.1 of the PhD thesis.

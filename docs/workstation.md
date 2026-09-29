@@ -16,9 +16,11 @@ the 2024 measurements, which is what makes the comparison meaningful.
 
 ```bash
 git clone https://github.com/mrollier/emulating-and-learning-CAs.git
-cd emulating-and-learning-CAs
-git switch cleanup/v1
+cd emulating-and-learning-CAs      # main (release 1.0.0 and later)
 ```
+
+A clone of the branch `cleanup/v1`, from before the 1.0.0 merge, works as well; push
+its results to that branch.
 
 ## 2. Start the container
 
@@ -86,7 +88,7 @@ summaries on the branch and push them:
 ```bash
 git add experiments/benchmarks/results experiments/training/results
 git commit -m "Benchmark and training results from the workstation"
-git push origin cleanup/v1
+git push                  # to main, or to cleanup/v1 if you cloned that branch
 ```
 
 On the laptop, `git pull` brings them in; the reports (`REPORT.md` in both
