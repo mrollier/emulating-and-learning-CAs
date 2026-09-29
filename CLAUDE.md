@@ -48,9 +48,13 @@ separate repository `network_automata_robustness` and is deliberately not includ
 
 ## Environment
 Development venv: `%LOCALAPPDATA%\venvs\ca-emulators` (Python 3.11.5, TF 2.14.0,
-package installed editable). The paper's original conda environment is
-`../learning_automata/.conda` (Python 3.11.8, TF 2.14.0); it was used once to capture
-`data/golden` and may be deleted by the owner after the checkpoint in the plan.
+package installed editable). The paper's original conda environment lived in the local
+clone `../learning_automata`, which was used once to capture `data/golden` and then
+deleted (2026-09-29, with the owner's approval); its package list is
+`docs/env/paper-env-2024.txt`, and its gitignored outputs (figures, the 85 trained 2024
+models, the timing data) are archived in `../learning_automata-outputs-2024.zip`.
+Long runs (the benchmark in `experiments/benchmarks`, the large training sweeps) happen
+on the owner's Linux workstation, see `docs/workstation.md`.
 
 ## Conventions
 - UK English in prose and comments (behaviour, neighbourhood, initialise).
