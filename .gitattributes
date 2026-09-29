@@ -11,3 +11,6 @@
 # Notebooks keep LF endings on every platform, so executing them on Windows
 # does not produce whole-file diffs.
 *.ipynb text eol=lf
+
+# Shell scripts keep LF endings, or bash fails on Windows checkouts.
+*.sh text eol=lf
