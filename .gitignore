@@ -1,3 +1,26 @@
-figures/
-files/
-.conda
+# Generated figures (regenerable with reproduce.py)
+output/*
+!output/.gitkeep
+
+# Raw per-run output of the experiments; summaries are committed
+experiments/*/results/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.venv/
+venv/
+.conda/
+
+# Editors and Jupyter
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
