@@ -27,16 +27,37 @@ import numpy as np
 from .rules import check_alloc, check_rules, neighbourhood_patterns, rule_table
 
 DEFAULT_OMEGA = 5.0
+ENCODINGS = ("01", "pm1")
 
 
-def detector_kernel(omega: float = DEFAULT_OMEGA) -> np.ndarray:
-    """Kernel of layer 1, shape (3, 1, 8): kernel[k, 0, i] weights position k for channel i."""
-    weights = np.where(neighbourhood_patterns() == 1, 1.0, -float(omega))  # (8, 3)
+def detector_kernel(omega: float = DEFAULT_OMEGA, encoding: str = "01") -> np.ndarray:
+    """Kernel of layer 1, shape (3, 1, 8): kernel[k, 0, i] weights position k for channel i.
+
+    With states fed as 0/1 (``encoding="01"``, the paper's network) the
+    weights are +1 and -omega. With states fed as -1/+1 (``"pm1"``) they are
+    the signs of the pattern, +1 and -1, and omega plays no role.
+    """
+    patterns = neighbourhood_patterns()
+    if encoding == "01":
+        weights = np.where(patterns == 1, 1.0, -float(omega))  # (8, 3)
+    elif encoding == "pm1":
+        weights = 2.0 * patterns - 1.0
+    else:
+        raise ValueError(f"encoding must be one of {ENCODINGS}")
     return weights.T[:, np.newaxis, :].astype(np.float32)
 
 
-def detector_bias() -> np.ndarray:
-    """Bias of layer 1, shape (8,): 1 - h for the neighbourhood of each channel."""
+def detector_bias(encoding: str = "01") -> np.ndarray:
+    """Bias of layer 1, shape (8,).
+
+    ``"01"``: 1 - h for the neighbourhood of each channel (h its number of
+    ones). ``"pm1"``: -2, since the weighted sum of a +-1 neighbourhood with
+    the sign pattern is 3 minus twice the Hamming distance.
+    """
+    if encoding == "pm1":
+        return np.full(8, -2.0, dtype=np.float32)
+    if encoding != "01":
+        raise ValueError(f"encoding must be one of {ENCODINGS}")
     n_ones = neighbourhood_patterns().astype(np.int64).sum(axis=1)  # not uint8: 1 - 2 must be -1
     return (1 - n_ones).astype(np.float32)
 

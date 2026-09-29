@@ -16,8 +16,11 @@ separate repository `network_automata_robustness` and is deliberately not includ
 - `scripts/`: one-off generators (golden outputs of the 2024 code, inputs decoded from
   the published PDFs, the published benchmark protocol).
 - `data/`: golden/, published_inputs/, benchmarks_2024/ (irreplaceable), benchmarks_2026/.
-- `verification/`: pytest for claims C1-C8 (see docs/provenance.md); `-m slow` for the
+- `verification/`: pytest for claims C1-C9 (see docs/provenance.md); `-m slow` for the
   long ones. Must exit zero.
+- `training.train_recipe` + `verify` implement the recipe of `experiments/training`
+  (approved by the owner on 2026-09-29); `train_2024_recipe` stays the faithful Fig. 3
+  reproduction. Trained recipe models output logits: pass `logits=True` to `verify`.
 - `experiments/training`, `experiments/benchmarks`: new work beyond the paper, each with
   its own README/REPORT; not imported by the package.
 - `reproduce.py quick|all [--with-benchmarks]`.

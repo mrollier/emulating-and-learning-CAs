@@ -4,7 +4,8 @@ from __future__ import annotations
 import numpy as np
 import tensorflow as tf
 
-from ._common import detector_layers, resolve_modes, set_detector_weights, unroll
+from ._common import (check_architecture, detector_layers, resolve_modes, set_detector_weights,
+                      unroll)
 from .rules import check_alloc, check_rules
 from .weights import DEFAULT_OMEGA, rule_table_kernel, selector_kernel_dense, selector_kernel_lc
 
@@ -40,6 +41,9 @@ class NucaEmulator:
         with ``n_rules`` channels.
     timesteps, output_hidden, activation, trainable, omega, kernel_initializer
         As for :class:`~ca_emulators.EcaEmulator`.
+    input_encoding, detector_activation, rule_activation
+        As for :class:`~ca_emulators.EcaEmulator`; ``rule_activation`` applies
+        to the rule-table layer and to the selector.
     rule_alloc : sequence of int or None
         Index into ``rules`` for every cell (length N). ``None`` gives a
         trainable selector.
@@ -56,7 +60,11 @@ class NucaEmulator:
     def __init__(self, N: int, rules=None, timesteps: int = 1, output_hidden: bool = False, *,
                  rule_alloc=None, activation=None, trainable=None, n_rules=None,
                  implementation: int = 1, omega: float = DEFAULT_OMEGA,
+                 input_encoding: str = "01", detector_activation="relu", rule_activation="relu",
                  kernel_initializer="he_normal", train_triplet_id=None):
+        self.input_encoding = input_encoding
+        self.detector_activation = detector_activation
+        self.rule_activation = rule_activation
         self.N = int(N)
         self.rules = None if rules is None else check_rules(rules)
         if self.rules is None and n_rules is None:
@@ -75,7 +83,8 @@ class NucaEmulator:
     def model(self) -> tf.keras.Model:
         """Build the network with a locally connected selector."""
         selector = tf.keras.layers.LocallyConnected1D(
-            1, 1, activation="relu", name="selector", implementation=self.implementation,
+            1, 1, activation=self.rule_activation, name="selector",
+            implementation=self.implementation,
             use_bias=self.rule_alloc is None, kernel_initializer=self.kernel_initializer,
             trainable=self._selector_trainable())
         model = self._build(lambda x: selector(x), "nuca_emulator_lc")
@@ -89,7 +98,8 @@ class NucaEmulator:
         to_rule_major = tf.keras.layers.Permute((2, 1), name="candidates_by_rule")
         flatten = tf.keras.layers.Flatten(name="flatten")
         selector = tf.keras.layers.Dense(
-            self.N, activation="relu", name="selector", use_bias=self.rule_alloc is None,
+            self.N, activation=self.rule_activation, name="selector",
+            use_bias=self.rule_alloc is None,
             kernel_initializer=self.kernel_initializer, trainable=self._selector_trainable())
         to_cells = tf.keras.layers.Reshape((self.N, 1), name="configuration_out")
 
@@ -115,7 +125,8 @@ class NucaEmulator:
         if variant not in ("dense", "lc"):
             raise ValueError("variant must be 'dense' or 'lc'")
         one_step = NucaEmulator(self.N, self.rules, rule_alloc=self.rule_alloc,
-                                implementation=self.implementation, omega=self.omega)
+                                implementation=self.implementation, omega=self.omega,
+                                input_encoding=self.input_encoding)
         model = one_step.model_dense() if variant == "dense" else one_step.model()
         return spacetime(model, x0, n_updates, method=method)
 
@@ -126,20 +137,24 @@ class NucaEmulator:
 
     def _build(self, select, name: str) -> tf.keras.Model:
         modes = resolve_modes(self.rules is not None, self.trainable, self.train_triplet_id)
-        padding, detectors = detector_layers(modes, self.kernel_initializer)
+        check_architecture(modes, self.input_encoding, self.detector_activation)
+        front = detector_layers(modes, self.kernel_initializer, self.input_encoding,
+                                self.detector_activation)
         rule_tables = tf.keras.layers.Conv1D(
-            self.n_rules, 1, activation="relu", name="rule_tables",
+            self.n_rules, 1, activation=self.rule_activation, name="rule_tables",
             use_bias=not modes.rules_analytic, kernel_initializer=self.kernel_initializer,
             trainable=modes.rules_trainable)
 
         def step(x):
-            return select(rule_tables(detectors(padding(x))))
+            for layer in front:
+                x = layer(x)
+            return select(rule_tables(x))
 
         inputs = tf.keras.Input((self.N, 1), dtype=tf.float32, name="configuration")
         outputs = unroll(inputs, step, self.timesteps, self.output_hidden, self.activation)
         model = tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
         if modes.detectors_analytic:
-            set_detector_weights(model, self.omega)
+            set_detector_weights(model, self.omega, self.input_encoding)
         if modes.rules_analytic:
             rule_tables.set_weights([rule_table_kernel(self.rules)])
         return model

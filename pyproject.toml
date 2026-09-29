@@ -47,4 +47,5 @@ addopts = "-q -p no:cacheprovider"
 markers = ["slow: long-running checks (run with `pytest -m slow`, skipped by `reproduce.py quick`)"]
 filterwarnings = ["ignore::DeprecationWarning:tensorflow.*", "ignore::DeprecationWarning:keras.*",
                   "ignore::DeprecationWarning:flatbuffers.*", "ignore::DeprecationWarning:matplotlib.*",
-                  "ignore:.*deprecated - use.*"]
+                  "ignore:.*deprecated - use.*",
+                  "ignore:non-integer arguments to randrange:DeprecationWarning"]

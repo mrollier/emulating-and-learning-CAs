@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import tensorflow as tf
 
 from .layers import PeriodicPadding1D
-from .weights import detector_bias, detector_kernel
+from .weights import ENCODINGS, detector_bias, detector_kernel
 
 
 @dataclass(frozen=True)
@@ -43,19 +43,32 @@ def resolve_modes(rules_known: bool, trainable, train_triplet_id) -> LayerModes:
                       rules_analytic=rules_known, rules_trainable=rules_trainable)
 
 
-def detector_layers(modes: LayerModes, kernel_initializer) -> list[tf.keras.layers.Layer]:
-    """Periodic padding followed by the eight neighbourhood detectors."""
-    return [
+def check_architecture(modes: LayerModes, input_encoding: str, detector_activation) -> None:
+    if input_encoding not in ENCODINGS:
+        raise ValueError(f"input_encoding must be one of {ENCODINGS}")
+    if modes.detectors_analytic and detector_activation != "relu":
+        raise ValueError("the analytic detectors are exact with a ReLU only; "
+                         "other detector activations are for trainable networks")
+
+
+def detector_layers(modes: LayerModes, kernel_initializer, input_encoding: str = "01",
+                    detector_activation="relu") -> list[tf.keras.layers.Layer]:
+    """Optional input encoding, periodic padding and the eight neighbourhood detectors."""
+    layers = []
+    if input_encoding == "pm1":  # states 0/1 are fed to the detectors as -1/+1
+        layers.append(tf.keras.layers.Rescaling(2.0, offset=-1.0, name="encoding"))
+    return layers + [
         PeriodicPadding1D(1, name="periodic_padding"),
         tf.keras.layers.Conv1D(
-            8, 3, activation="relu", name="detectors",
+            8, 3, activation=detector_activation, name="detectors",
             kernel_initializer=kernel_initializer, bias_initializer="zeros",
             trainable=modes.detectors_trainable),
     ]
 
 
-def set_detector_weights(model: tf.keras.Model, omega: float) -> None:
-    model.get_layer("detectors").set_weights([detector_kernel(omega), detector_bias()])
+def set_detector_weights(model: tf.keras.Model, omega: float, encoding: str = "01") -> None:
+    model.get_layer("detectors").set_weights([detector_kernel(omega, encoding),
+                                              detector_bias(encoding)])
 
 
 def unroll(inputs, step, timesteps: int, output_hidden: bool, activation):

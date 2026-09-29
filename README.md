@@ -32,7 +32,7 @@ Paper figure numbers first, thesis numbers in brackets.
 | Sec. 1.2 [7.1.1], Fig. 2 [7.2] and Tab. 7.1: the 40-parameter ECA network | [`notebooks/walkthrough.ipynb`](notebooks/walkthrough.ipynb), sections 1–2; the weights are in [`src/ca_emulators/weights.py`](src/ca_emulators/weights.py), the network in [`src/ca_emulators/eca.py`](src/ca_emulators/eca.py); `python figures/fig2_decomposition.py` |
 | Sec. 2.2 [7.1.2]: "the code and annotations of the `NucaEmulator` class" | [`src/ca_emulators/nuca.py`](src/ca_emulators/nuca.py): `NucaEmulator(...).model()` (locally connected, Eq. 1 [7.1]) and `.model_dense()` (dense, Eq. 2 [7.2]); walkthrough section 3 |
 | Fig. 1 [7.1]: a νCA with rules 30 and 90 | `python figures/fig1_nuca_example.py` |
-| Fig. 3 [7.3]: a CNN trained to emulate rule 54 | `python figures/fig3_training.py` (seeded re-run of the 2024 recipe, [`src/ca_emulators/training.py`](src/ca_emulators/training.py)); better recipes in [`experiments/training/`](experiments/training/) |
+| Fig. 3 [7.3]: a CNN trained to emulate rule 54 | `python figures/fig3_training.py` (seeded re-run of the 2024 recipe, [`src/ca_emulators/training.py`](src/ca_emulators/training.py)); a recipe that is exact for every rule, `training.train_recipe`, from the study in [`experiments/training/`](experiments/training/REPORT.md) |
 | Fig. 4 [7.4]: an 8-rule νCA in CellPyLib | `python figures/fig4_nuca_cellpylib.py` |
 | Tab. 1 [7.2] and Fig. 5 [7.5]: the four benchmark scenarios | `python figures/fig5_benchmarks.py` (archived 2024 data in [`data/benchmarks_2024/`](data/benchmarks_2024/)); re-run the protocol with `python scripts/benchmark_published.py`; faster ways to run the CNNs in [`experiments/benchmarks/`](experiments/benchmarks/) |
 | Sec. 7.1.4: "the output of both CNNs was verified to be bit-identical to that of CellPyLib" | `python -m pytest` ([`verification/`](verification/), claims C1–C8 in [`docs/provenance.md`](docs/provenance.md)) |
@@ -65,6 +65,28 @@ lc_model, dense_model = nuca.model(), nuca.model_dense()   # 32 + 16 + 64 and 32
 
 Both classes are exact and frozen by default. Without a rule (`EcaEmulator(N)`), or with
 `trainable=True`, the same architecture can be trained.
+
+## Learning the weights instead
+
+The 2024 recipe behind Fig. 3 trains the emulator from random weights in about 88% of
+runs and never for rule 1. A study over all 256 rules and many seeds
+([`experiments/training/REPORT.md`](experiments/training/REPORT.md)) traced this to the
+output head (a ReLU before a tanh leaves some neighbourhoods without gradient). Its
+recommended recipe was exact in all 32768 runs (every rule × 128 seeds): states fed as
+±1, softplus detectors, a linear rule-table layer read as a logit, binary cross-entropy,
+Adam with learning rate 0.02 (41 parameters).
+
+```python
+from ca_emulators import verify
+from ca_emulators.training import train_recipe
+
+run = train_recipe(rule=110, seed=0)          # a few seconds on a laptop CPU
+run.exact, run.certificate                    # (True, 0.05): exact, and proved exact in closed loop
+verify.closed_loop_exact(run.model, 110, np.random.randint(2, size=(4, 64)), 100, logits=True)
+```
+
+Trained networks are exact but never rediscover the one-hot detectors of the analytic
+construction; the study also covers learning from multi-step spacetime diagrams.
 
 ## Install
 
@@ -99,7 +121,9 @@ command, expected output and status.
 ```
 src/ca_emulators/   the package: eca.py, nuca.py (the emulators), weights.py (analytic weights,
                     Eqs. 7.1-7.2), layers.py (periodic padding), reference.py (numpy and CellPyLib
-                    reference simulators), rules.py, simulate.py, training.py (Fig. 3 recipe), plotting.py
+                    reference simulators), rules.py, simulate.py, training.py (the Fig. 3 recipe and
+                    the reliable one), verify.py (exactness checks and certificate), benchmarks.py,
+                    plotting.py
 figures/            one script per published figure, writing to output/
 scripts/            one-off generators: golden outputs of the 2024 code, inputs decoded from the
                     published figures, re-run of the published benchmark

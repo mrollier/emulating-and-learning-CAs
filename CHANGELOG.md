@@ -26,6 +26,13 @@ and Sec. 7.1 of the PhD thesis.
 - **Notebook**: `notebooks/walkthrough.ipynb`.
 - **Experiments**: a training study (`experiments/training/`) and new benchmarks of
   exact emulation (`experiments/benchmarks/`).
+- **Training**: `training.train_recipe`, the recipe the study found exact for every rule
+  (+-1 inputs, softplus detectors, sigmoid/BCE head), next to the faithful
+  `train_2024_recipe`; `verify` (`is_exact` via the de Bruijn certificate, an interval
+  certificate of closed-loop exactness, `closed_loop_exact`); the emulators take
+  `input_encoding` ("01"/"pm1", with analytic +-1 weights), `detector_activation` and
+  `rule_activation`, and `EcaEmulator(None, ...)` accepts any number of cells. Defaults are
+  unchanged, so the golden outputs and figures are too.
 - **Removed**: bytecode, `old/`, the Windows-only `environment.yml`, the unused
   training exploration (generalised sigmoid, constraints, grid search, the
   `kernel_initializer='halfway'` option, which now raises a clear error). All of it

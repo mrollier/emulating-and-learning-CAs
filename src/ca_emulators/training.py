@@ -1,12 +1,19 @@
-"""The 2024 training recipe behind Fig. 3 (thesis Fig. 7.3).
+"""Training emulators from random weights: the 2024 recipe and a reliable one.
 
-The published figure illustrates that the emulator architecture can also be
-*trained*: starting from random weights, a network learns one update of rule
-54 from pairs of configurations. This module reproduces that recipe
+The published Fig. 3 (thesis Fig. 7.3) illustrates that the emulator
+architecture can also be *trained*: starting from random weights, a network
+learns one update of rule 54. :func:`train_2024_recipe` reproduces that recipe
 faithfully (``scripts/eca_optimisation.py`` at the tag ``acri-2024``), with
-seeds. Better ways to train emulators are studied in ``experiments/training``.
+seeds. It is exact in about 88% of runs over all rules and seeds, and never
+for rule 1 (``experiments/training/REPORT.md``).
 
-The recipe:
+:func:`train_recipe` implements the recipe recommended by that study: states
+fed as -1/+1, softplus detectors, a linear rule-table layer read as a logit,
+binary cross-entropy and Adam with learning rate 0.02 (41 parameters). It was
+exact in all 32768 runs of the study (every rule, 128 seeds), and every one
+of those networks was proved exact in unbinarised closed loop.
+
+The 2024 recipe:
 
 1. Draw ``n_train`` and ``n_val`` random configurations of N cells; the
    targets are one update by the exact emulator.
@@ -78,6 +85,12 @@ def train_2024_recipe(rule: int = 54, N: int = 32, *, seed: int = 0, n_train: in
     ``example`` (a configuration of N cells) is placed first in the training
     set; Fig. 3 shows the network's output on it. The run is deterministic for
     a given ``seed`` when TensorFlow's op determinism is enabled.
+
+    For rule 1 the pretraining loop cannot succeed: with 0/1 inputs and zero
+    biases the network's output at the neighbourhood 000 starts at exactly 0
+    with zero gradient, so the loss stays above about 1/8 > 0.1 and the loop
+    only stops at ``max_restarts`` (with a warning). The uncapped 2024 loop
+    never stopped for rule 1. Use :func:`train_recipe` instead.
     """
     if max_restarts < 1:
         raise ValueError("max_restarts must be at least 1")
@@ -112,3 +125,66 @@ def train_2024_recipe(rule: int = 54, N: int = 32, *, seed: int = 0, n_train: in
     history = fit(best_model, x_train, y_train, x_val, y_val, batch_size=batch_size,
                   epochs=epochs, learning_rate=learning_rate, callbacks=[record], verbose=verbose)
     return TrainingRun(best_model, history, record.weights, x_train, y_train, losses)
+
+
+def recipe_model(N=None) -> tf.keras.Model:
+    """The network of the recommended recipe, randomly initialised (41 parameters).
+
+    ``EcaEmulator`` without a rule, with the states fed as -1/+1, softplus
+    detectors and a linear rule-table layer with a bias: its output is the
+    logit of the next state (predict 1 where it is positive).
+    """
+    return EcaEmulator(N, rule=None, input_encoding="pm1", detector_activation="softplus",
+                       rule_activation=None).model()
+
+
+@dataclass
+class RecipeRun:
+    """A network trained by :func:`train_recipe`, with its verdicts."""
+
+    model: tf.keras.Model
+    rule: int
+    seed: int
+    losses: np.ndarray
+    exact: bool          # one-step exact (de Bruijn certificate), see ca_emulators.verify
+    certificate: float   # largest proved closed-loop radius, 0 if none
+
+
+def train_recipe(rule: int, *, seed: int = 0, steps: int = 2560, learning_rate: float = 0.02,
+                 N=None) -> RecipeRun:
+    """Train an ECA emulator from random weights with the recommended recipe.
+
+    The training data is the de Bruijn configuration 00010111 and its image
+    under the rule, as one full batch: it contains every neighbourhood once,
+    which is all a network with receptive field 3 can learn from. Adam with
+    ``learning_rate``, binary cross-entropy on the logits, ``steps`` updates.
+    The model accepts configurations of any size unless ``N`` is given; its
+    output is a logit (use ``logits=True`` in :mod:`ca_emulators.verify`).
+    """
+    from .reference import eca_step
+    from .rules import DE_BRUIJN, check_rule
+    from .verify import interval_certificate, is_exact
+
+    rule = check_rule(rule)
+    n_cells = 8 if N is None else int(N)
+    if n_cells % 8:
+        raise ValueError("N must be a multiple of 8 (or None)")
+    tf.keras.utils.set_random_seed(seed)
+    model = recipe_model(N)
+    x0 = np.tile(DE_BRUIJN, n_cells // 8)
+    x = tf.constant(x0[np.newaxis, :, np.newaxis], tf.float32)
+    y = tf.constant(eca_step(x0, rule)[np.newaxis, :, np.newaxis], tf.float32)
+    optimiser = tf.keras.optimizers.Adam(learning_rate)
+    loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+
+    @tf.function
+    def step():
+        with tf.GradientTape() as tape:
+            loss = loss_fn(y, model(x, training=True))
+        grads = tape.gradient(loss, model.trainable_weights)
+        optimiser.apply_gradients(zip(grads, model.trainable_weights))
+        return loss
+
+    losses = np.array([float(step()) for _ in range(int(steps))])
+    return RecipeRun(model, rule, seed, losses, is_exact(model, rule, logits=True),
+                     interval_certificate(model, rule, logits=True))

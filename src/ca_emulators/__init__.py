@@ -21,10 +21,10 @@ if int(_keras_version.split(".")[0]) >= 3:
         "provides LocallyConnected1D. Install the pinned versions, e.g. "
         "`pip install -r requirements.txt` (tensorflow==2.14.0).")
 
-from . import reference, rules, simulate, weights  # noqa: E402
+from . import reference, rules, simulate, verify, weights  # noqa: E402
 from .eca import EcaEmulator  # noqa: E402
 from .layers import PeriodicPadding1D  # noqa: E402
 from .nuca import NucaEmulator  # noqa: E402
 
 __all__ = ["EcaEmulator", "NucaEmulator", "PeriodicPadding1D", "reference", "rules",
-           "simulate", "weights", "__version__"]
+           "simulate", "verify", "weights", "__version__"]
