@@ -1,0 +1,6 @@
+Source PDFs of data/published_inputs (scripts/extract_published_inputs.py)
+
+fig1_nuca_rules30_90.npz  <-  acri-example-rules30_90_vertical.pdf  sha256 65e3d551045af63604d45c640706bcdfc95a78dff589c587f69019fa3b7624b1
+fig2_decomposition_rule54.npz  <-  eca-N32-rule54-decomposition.pdf  sha256 793508a535a5258ed6314eb56634d7e7c9208204e2ec339b3926296cd0657d4e
+fig3_training_example_rule54.npz  <-  plot_configs_ECA_32cells_rule54_40epochs_bs64_lr0p005.pdf  sha256 e44a6b953c3d2ff834bdfe1af94fc4c20599124b5e1edbfb42265116a89d29d4
+fig4_nuca_cellpylib_8rules.npz  <-  cellpylib-spacetime_diagram-Nrules8.pdf  sha256 b5a537f661040848dff8cf7fd4d1f7c20480202aeb09bea3c698ba5d71c04741
