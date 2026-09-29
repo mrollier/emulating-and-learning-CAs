@@ -27,7 +27,8 @@ and Sec. 7.1 of the PhD thesis.
 - **Experiments**: a training study (`experiments/training/`) and new benchmarks of
   exact emulation (`experiments/benchmarks/`).
 - **Removed**: bytecode, `old/`, the Windows-only `environment.yml`, the unused
-  training exploration (generalised sigmoid, constraints, grid search). All of it
+  training exploration (generalised sigmoid, constraints, grid search, the
+  `kernel_initializer='halfway'` option, which now raises a clear error). All of it
   remains available at the tag `acri-2024`.
 - Licence (MIT), `CITATION.cff`, CI, `reproduce.py`.
 

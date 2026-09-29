@@ -5,8 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from ._common import detector_layers, resolve_modes, set_detector_weights, unroll
-from .reference import _check_alloc
-from .rules import check_rules
+from .rules import check_alloc, check_rules
 from .weights import DEFAULT_OMEGA, rule_table_kernel, selector_kernel_dense, selector_kernel_lc
 
 
@@ -63,7 +62,7 @@ class NucaEmulator:
         if self.rules is None and n_rules is None:
             raise ValueError("without rules, give the number of rule channels n_rules")
         self.n_rules = len(self.rules) if self.rules is not None else int(n_rules)
-        self.rule_alloc = None if rule_alloc is None else _check_alloc(rule_alloc, self.N, self.n_rules)
+        self.rule_alloc = None if rule_alloc is None else check_alloc(rule_alloc, self.N, self.n_rules)
         self.timesteps = int(timesteps)
         self.output_hidden = bool(output_hidden)
         self.activation = activation
@@ -104,11 +103,17 @@ class NucaEmulator:
 
     def simulate(self, x0, n_updates: int, variant: str = "dense",
                  method: str = "compiled") -> np.ndarray:
-        """Spacetime diagram (..., n_updates + 1, N) of the exact emulator."""
+        """Spacetime diagram (..., n_updates + 1, N) of the exact emulator.
+
+        ``variant`` is ``"dense"`` or ``"lc"`` (locally connected, in this
+        emulator's implementation mode).
+        """
         from .simulate import spacetime
 
         if self.rules is None or self.rule_alloc is None:
             raise ValueError("simulate needs rules and rule_alloc")
+        if variant not in ("dense", "lc"):
+            raise ValueError("variant must be 'dense' or 'lc'")
         one_step = NucaEmulator(self.N, self.rules, rule_alloc=self.rule_alloc,
                                 implementation=self.implementation, omega=self.omega)
         model = one_step.model_dense() if variant == "dense" else one_step.model()

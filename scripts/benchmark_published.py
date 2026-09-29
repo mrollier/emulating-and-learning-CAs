@@ -47,19 +47,8 @@ except ImportError:
 import numpy as np  # noqa: E402
 
 from ca_emulators import NucaEmulator  # noqa: E402
+from ca_emulators.benchmarks import SCENARIOS, save_timings  # noqa: E402
 from ca_emulators.reference import evolve  # noqa: E402
-
-#: scenario -> (file stem, fixed parameters, varied parameter, its values), Tab. 7.2
-SCENARIOS = {
-    "Nrules": ("nuca-comparison-Nrules-N256_T32_S32_avg-from-10", dict(N=256, T=32, S=32),
-               "Nrules", [2**k for k in range(9)]),
-    "T": ("nuca-comparison-T-N64_Nrules4_S32_avg-from-10", dict(N=64, Nrules=4, S=32),
-          "T", list(range(10, 101, 10))),
-    "N": ("nuca-comparison-N-T32_Nrules4_S32_avg-from-10", dict(T=32, Nrules=4, S=32),
-          "N", list(range(32, 257, 32))),
-    "S": ("nuca-comparison-S-N32_T32_Nrules4_avg-from-10", dict(N=32, T=32, Nrules=4),
-          "S", [2**k for k in range(11)]),
-}
 
 
 def points(scenario: str, rng: np.random.Generator, quick: bool):
@@ -70,7 +59,8 @@ def points(scenario: str, rng: np.random.Generator, quick: bool):
     allocation per point); initial configurations are drawn per point where
     their shape changes.
     """
-    _, fixed, varied, values = SCENARIOS[scenario]
+    fixed, varied, values = (SCENARIOS[scenario].fixed, SCENARIOS[scenario].varied,
+                             list(SCENARIOS[scenario].values))
     if quick:
         values = values[:3]
     rules = alloc = x0 = None
@@ -116,22 +106,24 @@ def time_cnn(p, rules, alloc, x, variant: str) -> tuple[float, np.ndarray]:
 
 def run(scenario: str, repeats: int, rng, quick: bool, verbose: bool):
     values, pts = points(scenario, rng, quick)
+    # reference diagrams, computed once per point (outside every timed region)
+    expected = [evolve(x, rules, p["T"] - 1, alloc) for p, rules, alloc, x in pts]
     times = {m: np.zeros((repeats, len(pts))) for m in ("cpl", "lc", "dense")}
     for method in times:
         for rep in range(repeats):
             for j, (p, rules, alloc, x) in enumerate(pts):
                 if method == "cpl":
                     elapsed, diagram = time_cellpylib(p, rules, alloc, x)
-                    expected = evolve(x[-1], rules, p["T"] - 1, alloc)
+                    reference = expected[j][-1]  # CellPyLib returns the last sample's diagram
                 else:
                     elapsed, diagram = time_cnn(p, rules, alloc, x, method)
-                    expected = evolve(x, rules, p["T"] - 1, alloc)
-                if not np.array_equal(np.asarray(diagram).astype(np.uint8), expected):
+                    reference = expected[j]
+                if not np.array_equal(np.asarray(diagram).astype(np.uint8), reference):
                     raise AssertionError(f"{scenario}/{method}: wrong diagram at {p}")
                 times[method][rep, j] = elapsed
                 if verbose:
                     print(f"{scenario:6s} {method:5s} repeat {rep + 1}/{repeats} "
-                          f"{SCENARIOS[scenario][2]}={values[j]}: {elapsed:.3f} s", flush=True)
+                          f"{SCENARIOS[scenario].varied}={values[j]}: {elapsed:.3f} s", flush=True)
     return np.array(values), times
 
 
@@ -167,10 +159,8 @@ def main(argv=None) -> int:
     for scenario in scenarios:
         rng = np.random.default_rng([args.seed, list(SCENARIOS).index(scenario)])
         x, times = run(scenario, args.repeats, rng, args.quick, not args.quiet)
-        stem = SCENARIOS[scenario][0] + ("-quick" if args.quick else "")
-        with open(args.out / f"{stem}.npy", "wb") as f:
-            for arr in (x, times["cpl"], times["lc"], times["dense"]):
-                np.save(f, arr)
+        stem = SCENARIOS[scenario].stem + ("-quick" if args.quick else "")
+        save_timings(args.out / f"{stem}.npy", x, [times["cpl"], times["lc"], times["dense"]])
         (args.out / f"{stem}.json").write_text(json.dumps({**meta, "scenario": scenario}, indent=2) + "\n")
         print(f"wrote {args.out / stem}.npy")
     return 0

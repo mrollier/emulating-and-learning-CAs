@@ -55,6 +55,9 @@ class EcaEmulator:
     def __init__(self, N: int, rule=None, timesteps: int = 1, output_hidden: bool = False, *,
                  activation=None, trainable=None, omega: float = DEFAULT_OMEGA,
                  kernel_initializer="he_normal", train_triplet_id=None):
+        if isinstance(kernel_initializer, str) and kernel_initializer == "halfway":
+            raise ValueError("the 2024 'halfway' initialiser was removed in 1.0 (it is still "
+                             "available at the tag acri-2024)")
         self.N = int(N)
         self.rule = None if rule is None else check_rule(rule)
         self.timesteps = int(timesteps)

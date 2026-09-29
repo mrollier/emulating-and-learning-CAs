@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .rules import check_rules, neighbourhood_patterns, rule_table
+from .rules import check_alloc, check_rules, neighbourhood_patterns, rule_table
 
 DEFAULT_OMEGA = 5.0
 
@@ -49,9 +49,7 @@ def rule_table_kernel(rules) -> np.ndarray:
 
 def allocation_one_hot(alloc, n_rules: int) -> np.ndarray:
     """(N, N_R) float32 matrix with a single 1 per row at the allocated rule."""
-    alloc = np.asarray(alloc, dtype=np.int64)
-    if alloc.ndim != 1 or alloc.min() < 0 or alloc.max() >= n_rules:
-        raise ValueError(f"rule_alloc must be a 1-D array of indices in [0, {n_rules - 1}]")
+    alloc = check_alloc(alloc, np.shape(alloc)[-1] if np.ndim(alloc) else 1, n_rules)
     return np.eye(n_rules, dtype=np.float32)[alloc]
 
 

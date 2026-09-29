@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .rules import check_rules, rule_table
+from .rules import check_alloc, check_rules, rule_table
 
 
 def as_states(x) -> np.ndarray:
@@ -44,7 +44,7 @@ def eca_step(x, rule) -> np.ndarray:
 def nuca_step(x, rules, alloc) -> np.ndarray:
     """One global update of a nuCA with static allocation ``alloc`` (shape (N,))."""
     tables = np.stack([rule_table(r) for r in check_rules(rules)])
-    alloc = _check_alloc(alloc, np.shape(x)[-1], len(tables))
+    alloc = check_alloc(alloc, np.shape(x)[-1], len(tables))
     return tables[alloc, neighbourhood_index(x)]
 
 
@@ -55,20 +55,11 @@ def evolve(x0, rules, n_updates: int, alloc=None) -> np.ndarray:
     rules with an allocation, static (N,) or time-varying (n_updates, N).
     """
     x = as_states(x0)
-    rules = check_rules(rules)
-    n_cells = x.shape[-1]
-    if alloc is None:
-        if len(rules) != 1:
-            raise ValueError("several rules need an allocation")
-        alloc = np.zeros(n_cells, dtype=np.int64)
-    alloc = np.asarray(alloc)
-    if alloc.ndim == 1:
-        alloc = np.broadcast_to(alloc, (n_updates, n_cells))
-    if alloc.shape != (n_updates, n_cells):
-        raise ValueError(f"alloc must have shape ({n_cells},) or ({n_updates}, {n_cells})")
+    rules, alloc = _rules_and_alloc(rules, alloc, x.shape[-1], n_updates)
+    tables = np.stack([rule_table(r) for r in rules])
     frames = [x]
     for t in range(n_updates):
-        frames.append(nuca_step(frames[-1], rules, alloc[t]))
+        frames.append(tables[alloc[t], neighbourhood_index(frames[-1])])
     return np.stack(frames, axis=-2)
 
 
@@ -82,26 +73,26 @@ def evolve_cellpylib(x0, rules, n_updates: int, alloc=None) -> np.ndarray:
 
     x = as_states(x0)
     batch = x.reshape(-1, x.shape[-1])
-    rules = check_rules(rules)
-    n_cells = x.shape[-1]
-    if alloc is None:
-        alloc = np.zeros(n_cells, dtype=np.int64)
-    alloc = np.asarray(alloc)
-    if alloc.ndim == 1:
-        alloc = np.broadcast_to(alloc, (max(n_updates, 1), n_cells))
+    rules, alloc = _rules_and_alloc(rules, alloc, x.shape[-1], max(n_updates, 1))
     out = [
         cpl.evolve(row[np.newaxis, :].astype(int), timesteps=n_updates + 1,
                    apply_rule=lambda n, c, t: cpl.nks_rule(n, int(rules[alloc[t - 1, c]])),
                    memoize=False)
         for row in batch
     ]
-    return np.asarray(out, dtype=np.uint8).reshape(*x.shape[:-1], n_updates + 1, n_cells)
+    return np.asarray(out, dtype=np.uint8).reshape(*x.shape[:-1], n_updates + 1, x.shape[-1])
 
 
-def _check_alloc(alloc, n_cells: int, n_rules: int) -> np.ndarray:
-    alloc = np.asarray(alloc)
-    if alloc.shape != (n_cells,):
-        raise ValueError(f"rule_alloc must have shape ({n_cells},), got {alloc.shape}")
-    if alloc.min() < 0 or alloc.max() >= n_rules:
-        raise ValueError(f"rule_alloc entries must lie in [0, {n_rules - 1}]")
-    return alloc.astype(np.int64)
+def _rules_and_alloc(rules, alloc, n_cells: int, n_updates: int):
+    """Validated rules and an allocation of shape (n_updates, N)."""
+    rules = check_rules(rules)
+    if alloc is None:
+        if len(rules) != 1:
+            raise ValueError("several rules need an allocation")
+        alloc = np.zeros(n_cells, dtype=np.int64)
+    alloc = check_alloc(alloc, n_cells, len(rules), time_varying=True)
+    if alloc.ndim == 1:
+        alloc = np.broadcast_to(alloc, (n_updates, n_cells))
+    if alloc.shape[0] != n_updates:
+        raise ValueError(f"a time-varying allocation needs {n_updates} rows, got {alloc.shape[0]}")
+    return rules, alloc

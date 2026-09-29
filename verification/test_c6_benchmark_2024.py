@@ -14,21 +14,18 @@ the data, and docs/provenance.md records the difference.
 import numpy as np
 import pytest
 
+from ca_emulators.benchmarks import SCENARIOS, load_timings
 from conftest import DATA
 
-FILES = {
-    "Nrules": "nuca-comparison-Nrules-N256_T32_S32_avg-from-10.npy",
-    "T": "nuca-comparison-T-N64_Nrules4_S32_avg-from-10.npy",
-    "N": "nuca-comparison-N-T32_Nrules4_S32_avg-from-10.npy",
-    "S": "nuca-comparison-S-N32_T32_Nrules4_avg-from-10.npy",
-}
+
+def path(scenario):
+    return DATA / "benchmarks_2024" / f"{SCENARIOS[scenario].stem}.npy"
 
 
 def load(scenario):
-    with open(DATA / "benchmarks_2024" / FILES[scenario], "rb") as f:
-        x = np.load(f)
-        cpl, lc, dense = (np.load(f).mean(axis=0) for _ in range(3))
-    return x, cpl, lc, dense
+    """x-values and the mean CellPyLib, LC and dense times over the 10 repeats."""
+    x, times = load_timings(path(scenario))
+    return (x, *(t.mean(axis=0) for t in times))
 
 
 def r_squared(x, y):
@@ -40,11 +37,9 @@ def test_shapes_follow_table_7_2():
     expected = {"Nrules": [1, 2, 4, 8, 16, 32, 64, 128, 256], "T": list(range(10, 101, 10)),
                 "N": list(range(32, 257, 32)), "S": [2**k for k in range(11)]}
     for scenario, xs in expected.items():
-        x, *times = load(scenario)
-        assert list(x) == xs
-        with open(DATA / "benchmarks_2024" / FILES[scenario], "rb") as f:
-            np.load(f)
-            assert all(np.load(f).shape == (10, len(xs)) for _ in range(3))
+        x, times = load_timings(path(scenario))
+        assert list(x) == xs == list(SCENARIOS[scenario].values)
+        assert all(t.shape == (10, len(xs)) for t in times)
 
 
 def test_dense_cnn_is_nearly_constant():

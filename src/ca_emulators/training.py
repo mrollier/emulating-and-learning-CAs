@@ -22,6 +22,7 @@ The recipe:
 """
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -78,6 +79,8 @@ def train_2024_recipe(rule: int = 54, N: int = 32, *, seed: int = 0, n_train: in
     set; Fig. 3 shows the network's output on it. The run is deterministic for
     a given ``seed`` when TensorFlow's op determinism is enabled.
     """
+    if max_restarts < 1:
+        raise ValueError("max_restarts must be at least 1")
     tf.keras.utils.set_random_seed(seed)
     rng = np.random.default_rng(seed)
     x_train = rng.integers(2, size=(n_train, N, 1)).astype(np.int8)
@@ -100,6 +103,10 @@ def train_2024_recipe(rule: int = 54, N: int = 32, *, seed: int = 0, n_train: in
             best_loss, best_model = losses[-1], candidate
         if verbose:
             print(f"pretraining {len(losses)}: loss {losses[-1]:.4f} (best {best_loss:.4f})")
+    if best_loss > pretrain_threshold:
+        warnings.warn(f"no pretraining run reached a loss below {pretrain_threshold} in "
+                      f"{max_restarts} restarts (best {best_loss:.4f}); training the best one, "
+                      "which the 2024 recipe would not have done", RuntimeWarning, stacklevel=2)
 
     record = WeightsHistory()
     history = fit(best_model, x_train, y_train, x_val, y_val, batch_size=batch_size,

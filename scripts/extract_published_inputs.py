@@ -28,9 +28,10 @@ import hashlib
 import re
 from pathlib import Path
 
-import cellpylib as cpl
 import numpy as np
 import pymupdf
+
+from ca_emulators.reference import evolve_cellpylib, neighbourhood_index
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT.parent.parent / "Submissions" / "arXiv" / "nuca-simulation" / "figures"
@@ -96,17 +97,14 @@ def classify(rgb: np.ndarray, palette: list[tuple[int, int, int]]) -> np.ndarray
     return idx.reshape(rgb.shape[:-1])
 
 
-def evolve_cellpylib(x0: np.ndarray, rules, alloc: np.ndarray, n_rows: int) -> np.ndarray:
-    """CellPyLib diagram with n_rows rows; alloc has one row per update (t-1)."""
-    return cpl.evolve(
-        x0[np.newaxis, :].astype(int), timesteps=n_rows,
-        apply_rule=lambda n, c, t: cpl.nks_rule(n, int(rules[alloc[t - 1, c]])),
-        memoize=False,
-    )
+def cellpylib_diagram(x0: np.ndarray, rules, alloc: np.ndarray) -> np.ndarray:
+    """CellPyLib diagram with as many rows as ``alloc`` (row t - 1 governs update t)."""
+    n_updates = len(alloc) - 1
+    return evolve_cellpylib(x0, rules, n_updates, alloc[:n_updates])
 
 
 def eca_update(x: np.ndarray, rule: int) -> np.ndarray:
-    return evolve_cellpylib(x, [rule], np.zeros((1, len(x)), dtype=int), 2)[1]
+    return evolve_cellpylib(x, rule, 1)[1]
 
 
 def fig1(pdf: Path) -> dict[str, np.ndarray]:
@@ -115,7 +113,7 @@ def fig1(pdf: Path) -> dict[str, np.ndarray]:
     diagram = classify(cells(raster(pdf, xs), 32, 32), [WHITE, BLACK])
     rules = np.array([30, 90])
     assert np.all(alloc == alloc[0]), "Fig. 1 allocation is not uniform in time"
-    assert np.array_equal(evolve_cellpylib(diagram[0], rules, alloc, 32), diagram)
+    assert np.array_equal(cellpylib_diagram(diagram[0], rules, alloc), diagram)
     return {"rules": rules, "alloc": alloc[0], "diagram": diagram}
 
 
@@ -126,8 +124,7 @@ def fig2(pdf: Path) -> dict[str, np.ndarray]:
     x_out = classify(cells(raster(pdf, strips[-1]), 1, 32), [WHITE, BLACK])[0]
     one_hot_xref = [x for x, (w, h) in imgs if w > 300 and h > 50][0]
     one_hot = classify(cells(raster(pdf, one_hot_xref), 8, 32), [WHITE, BLACK])
-    padded = np.concatenate([x_in[-1:], x_in, x_in[:1]])
-    index = 4 * padded[:-2] + 2 * padded[1:-1] + padded[2:]
+    index = neighbourhood_index(x_in)
     assert np.array_equal(one_hot, (np.arange(8)[:, None] == index[None, :]).astype(int))
     assert np.array_equal(eca_update(x_in, 54), x_out)
     return {"rule": np.array(54), "x": x_in, "y": x_out}
@@ -151,7 +148,7 @@ def fig4(pdf: Path) -> dict[str, np.ndarray]:
     assert len(rules) == 8 and np.all(np.diff(rules) > 0), f"unexpected rule labels {rules}"
     for t in range(32):  # the allocation is shifted by one cell per time step
         assert np.array_equal(alloc[t], np.roll(alloc[0], -t)), "Fig. 4 allocation is not a shift"
-    assert np.array_equal(evolve_cellpylib(diagram[0], rules, alloc, 32), diagram)
+    assert np.array_equal(cellpylib_diagram(diagram[0], rules, alloc), diagram)
     return {"rules": rules, "alloc": alloc, "diagram": diagram}
 
 

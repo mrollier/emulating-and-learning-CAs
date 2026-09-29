@@ -4,7 +4,7 @@ import pytest
 import tensorflow as tf
 
 from ca_emulators import EcaEmulator, NucaEmulator, PeriodicPadding1D
-from ca_emulators.reference import evolve
+from ca_emulators.reference import evolve, evolve_cellpylib
 from ca_emulators.simulate import spacetime
 from ca_emulators.weights import selector_kernel_lc
 
@@ -53,7 +53,40 @@ def test_invalid_allocation():
     with pytest.raises(ValueError):
         NucaEmulator(8, [30, 90], rule_alloc=[0, 1, 2, 0, 1, 0, 1, 0])
     with pytest.raises(ValueError):
+        NucaEmulator(4, [30, 90], rule_alloc=[0.0, 0.9, 1.0, 0.5])  # not integers
+    with pytest.raises(ValueError):
         NucaEmulator(8)  # neither rules nor n_rules
+
+
+def test_references_need_an_allocation_for_several_rules(rng):
+    x = rng.integers(2, size=8)
+    with pytest.raises(ValueError):
+        evolve(x, [30, 90], 4)
+    with pytest.raises(ValueError):
+        evolve_cellpylib(x, [30, 90], 4)
+
+
+def test_simulate_rejects_unknown_variant():
+    em = NucaEmulator(8, [30, 90], rule_alloc=np.arange(8) % 2)
+    with pytest.raises(ValueError):
+        em.simulate(np.zeros(8, dtype=int), 2, variant="Dense")
+
+
+def test_explicit_trainable_overrides_train_triplet_id():
+    with pytest.warns(DeprecationWarning):
+        model = EcaEmulator(16, 54, trainable=True, train_triplet_id=False).model()
+    assert {w.name.split("/")[0] for w in model.trainable_weights} == {"detectors", "rule_tables"}
+
+
+def test_removed_halfway_initialiser_is_reported():
+    with pytest.raises(ValueError, match="halfway"):
+        EcaEmulator(16, kernel_initializer="halfway")
+
+
+def test_training_needs_at_least_one_restart():
+    from ca_emulators.training import train_2024_recipe
+    with pytest.raises(ValueError):
+        train_2024_recipe(54, max_restarts=0)
 
 
 def test_periodic_padding(rng):

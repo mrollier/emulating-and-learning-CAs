@@ -25,18 +25,20 @@ def resolve_modes(rules_known: bool, trainable, train_triplet_id) -> LayerModes:
 
     By default, a network whose rules are known is exact and frozen, and a
     network without rules is randomly initialised and trainable.
-    ``trainable=True`` keeps the analytic initialisation but lets training
-    change it. The 2024 argument ``train_triplet_id`` is still honoured for
-    the detectors (True: random and trainable; False: analytic and frozen).
+    ``trainable=True`` keeps the analytic initialisation but makes every layer
+    trainable. The 2024 argument ``train_triplet_id`` is still honoured for
+    the detectors (True: random and trainable; False: analytic and frozen)
+    when ``trainable`` is not given; an explicit ``trainable`` takes precedence.
     """
     rules_trainable = (not rules_known) if trainable is None else bool(trainable)
     if train_triplet_id is not None:
         warnings.warn("train_triplet_id is deprecated; exact emulators are now the default "
                       "and trainable=True makes every layer trainable",
                       DeprecationWarning, stacklevel=3)
-        return LayerModes(detectors_analytic=not train_triplet_id,
-                          detectors_trainable=bool(train_triplet_id),
-                          rules_analytic=rules_known, rules_trainable=rules_trainable)
+        if trainable is None:
+            return LayerModes(detectors_analytic=not train_triplet_id,
+                              detectors_trainable=bool(train_triplet_id),
+                              rules_analytic=rules_known, rules_trainable=rules_trainable)
     return LayerModes(detectors_analytic=rules_known, detectors_trainable=rules_trainable,
                       rules_analytic=rules_known, rules_trainable=rules_trainable)
 

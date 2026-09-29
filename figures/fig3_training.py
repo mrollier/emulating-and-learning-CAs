@@ -41,6 +41,7 @@ def main(argv=None):
         "seed": args.seed,
         "pretraining_restarts": run.n_restarts,
         "pretraining_best_loss": min(run.pretrain_losses),
+        "pretraining_threshold_reached": min(run.pretrain_losses) < 0.1,
         "final_loss": float(run.history.history["loss"][-1]),
         "final_val_loss": float(run.history.history["val_loss"][-1]),
         "exact_after_thresholding": bool(np.array_equal(prediction > 0.5,

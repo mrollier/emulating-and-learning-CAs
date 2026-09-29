@@ -34,6 +34,23 @@ def check_rules(rules) -> np.ndarray:
     return np.array([check_rule(r) for r in rules], dtype=np.int64)
 
 
+def check_alloc(alloc, n_cells: int, n_rules: int, time_varying: bool = False) -> np.ndarray:
+    """Return a rule allocation as an int64 array, raising if it is not valid.
+
+    A static allocation has shape (N,); with ``time_varying`` a 2-D array
+    (n_updates, N) is accepted too. Entries must be integers in [0, n_rules).
+    """
+    alloc = np.asarray(alloc)
+    if not (alloc.ndim == 1 or (time_varying and alloc.ndim == 2)) or alloc.shape[-1] != n_cells:
+        raise ValueError(f"rule_alloc must have shape ({n_cells},)"
+                         + (f" or (n_updates, {n_cells})" if time_varying else "")
+                         + f", got {alloc.shape}")
+    if alloc.size and (not np.all(np.equal(np.mod(alloc, 1), 0))
+                       or alloc.min() < 0 or alloc.max() >= n_rules):
+        raise ValueError(f"rule_alloc entries must be integers in [0, {n_rules - 1}]")
+    return alloc.astype(np.int64)
+
+
 def neighbourhood_patterns() -> np.ndarray:
     """The eight neighbourhoods as rows of an (8, 3) array.
 
