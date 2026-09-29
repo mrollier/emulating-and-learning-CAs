@@ -23,7 +23,8 @@ def main(argv=None):
         if args.overlay:
             x_new, overlay = load_timings(_style.DATA / f"benchmarks_{args.overlay}" / f"{scenario.stem}.npy")
             assert np.array_equal(x_new, x), f"{name}: the re-run used other x-values"
-        fig, _ = plot_benchmark(name, x, times, scenario.fixed, overlay=overlay)
+        fig, _ = plot_benchmark(name, x, times, scenario.fixed, overlay=overlay,
+                                overlay_label=f"re-run {args.overlay} (grey)")
         _style.save(fig, scenario.stem + (f"-overlay{args.overlay}" if args.overlay else ""), args)
 
 

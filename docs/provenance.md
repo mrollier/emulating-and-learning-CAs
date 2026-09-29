@@ -14,7 +14,26 @@ repository root after `pip install -r requirements.txt && pip install -e .`.
 | 3 [7.3] | `plot_configs-ECA-32cells-rule54-40epochs_bs64_lr0p005` | `figures/fig3_training.py` | a trained network converging to rule 54 on the published example | ✅ qualitatively reproduced by a seeded re-run (seed 2024, fixed in advance): 132 pretraining restarts, final validation MSE 3.0e-6, exact after thresholding, margin 0.497 (`output/fig3_training.json`); the published run was unseeded, so the heatmap differs in detail |
 | 4 [7.4] | `cellpylib-spacetime_diagram-Nrules8` | `figures/fig4_nuca_cellpylib.py` | rules 41, 46, 72, 105, 158, 193, 232, 254, allocation shifted by one cell per step, CellPyLib diagram | ✅ reproduced cell for cell |
 | 5 [7.5] | `nuca-comparison-{Nrules-N256_T32_S32, T-N64_Nrules4_S32, N-T32_Nrules4_S32, S-N32_T32_Nrules4}_avg-from-10` | `figures/fig5_benchmarks.py` | the four panels from the archived 2024 timings | ✅ redrawn from `data/benchmarks_2024` (same data, same layout) |
-| 5, re-run | `…-overlay2026` | `scripts/benchmark_published.py`, then `figures/fig5_benchmarks.py --overlay 2026` | the 2024 protocol re-timed on the same CPU | see `data/benchmarks_2026/` |
+| 5, re-run | `…-overlay2026` | `scripts/benchmark_published.py` (about 85 min), then `figures/fig5_benchmarks.py --overlay 2026` | the 2024 protocol re-timed on the same CPU | ✅ qualitatively reproduced on 29 September 2026 (details below) |
+
+### The 2026 re-run of the published benchmark
+
+`scripts/benchmark_published.py` ran the 2024 protocol again on the same laptop CPU
+(Python 3.11.5, TensorFlow 2.14.0, idle machine; every diagram checked against the
+numpy reference). The qualitative findings of Fig. 5 hold:
+
+- the dense CNN overtakes CellPyLib between 64 and 96 cells, and between 64 and 128
+  samples, the same crossovers as in 2024;
+- for every number of rules the dense CNN is fastest and CellPyLib slowest;
+- all three methods scale linearly with the number of time steps.
+
+Absolute times differ from 2024 by factors 0.6 to 1.9. The CNNs are mostly faster now
+(ratio 0.6-0.9 in the N and S scenarios). CellPyLib matches 2024 within 5% in the N and
+S scenarios, but is 1.7 times slower in the T scenario. The 2024 data themselves vary this
+much between scenarios measured in different sessions: the same configuration took
+1.51 s and 3.58 s for the dense CNN in two 2024 scenarios. Session-to-session variation
+of this size is the reason the report of `experiments/benchmarks` separates warm and
+cold timings and records a calibration workload.
 | talks | `examples-of-ecas_6x6`, `examples-of-nucas_6x6` | `figures/extra_talk_grids.py` | 36 random ECAs / two-rule nuCAs (seeded) | ✅ |
 
 ## Claims

@@ -175,12 +175,14 @@ BENCHMARK_PANELS = {
 METHOD_LABELS = ("CellPyLib", "CNN (locally connected)", "CNN (densely connected)")
 
 
-def plot_benchmark(scenario: str, x, times, params: dict, overlay=None, labelsize: int = 14):
+def plot_benchmark(scenario: str, x, times, params: dict, overlay=None, labelsize: int = 14,
+                   overlay_label: str = "re-run (grey: all three methods)"):
     """One panel of Fig. 5: mean and standard deviation over repeats.
 
     ``times`` holds three (repeats, n) arrays (CellPyLib, locally connected,
     dense). ``params`` fills the title (keys S, N, T, Nrules). ``overlay``,
-    optional, holds three more arrays (e.g. a re-run) drawn in grey.
+    optional, holds three more arrays (e.g. a re-run) drawn in grey with the
+    same markers.
     """
     panel = BENCHMARK_PANELS[scenario]
     x = np.asarray(x, dtype=float)
@@ -194,10 +196,10 @@ def plot_benchmark(scenario: str, x, times, params: dict, overlay=None, labelsiz
         t = np.asarray(t)
         ax.errorbar(xi, t.mean(axis=0), yerr=t.std(axis=0), fmt=fmt, capsize=5, label=label)
     if overlay is not None:
-        for xi, t, fmt in zip(xs, overlay, ("+", "o", "x")):
+        for k, (xi, t, fmt) in enumerate(zip(xs, overlay, ("+", "o", "x"))):
             t = np.asarray(t)
             ax.errorbar(xi, t.mean(axis=0), yerr=t.std(axis=0), fmt=fmt, capsize=3,
-                        color="0.6", alpha=0.8)
+                        color="0.6", alpha=0.8, label=overlay_label if k == 0 else None)
     ax.set_title(panel["title"].format(**params), size=labelsize + 2)
     if "xscale" in panel:
         ax.set_xscale("log", base=panel["xscale"])
