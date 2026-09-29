@@ -24,7 +24,10 @@ def main() -> int:
     for name in NOTEBOOKS:
         path = HERE / name
         nb = nbformat.read(path, as_version=4)
-        NotebookClient(nb, timeout=600, kernel_name="python3",
+        for cell in nb.cells:
+            cell.metadata.pop("execution", None)
+        # record_timing=False keeps re-executions free of timestamp-only diffs
+        NotebookClient(nb, timeout=600, kernel_name="python3", record_timing=False,
                        resources={"metadata": {"path": str(HERE)}}).execute()
         nbformat.write(nb, path)
         print(f"executed {path.name}")
