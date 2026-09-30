@@ -1,0 +1,3 @@
+| config | pairs | success_f000_1 | success_complement_f000_0 | mean_diff | pairs_odd_worse | pairs_odd_better | reflection_pairs | reflection_mean_abs_diff | binomial_expected_abs_diff |
+|---|---|---|---|---|---|---|---|---|---|
+| rm_full | 0 |  |  |  | 0 | 0 | 0 |  |  |

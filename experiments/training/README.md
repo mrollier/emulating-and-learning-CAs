@@ -20,7 +20,8 @@ The findings and the recommended recipe are in **[REPORT.md](REPORT.md)**.
 | `analyse.py` | tables and figures from the raw output, into `results/<sweep>/` |
 | `validate_2024.py` | cross-check: the real Keras 2024 recipe on a few rules and seeds |
 | `templates.py` | retrains a sample of minimal networks with their weights kept and compares their detector responses with the analytic one-hot template |
-| `workstation.sh` | the full sweeps for the GPU workstation |
+| `workstation.sh` | the sweeps that need the GPU workstation |
+| `laptop.sh` | the high-seed sweeps, sized for a laptop CPU |
 | `configs/*.json` | the sweep definitions (one per phase of the study) |
 | `tests/` | fast pytest checks, incl. "one ensemble member = one standalone Keras network" |
 | `results/<sweep>/` | committed summaries (CSV/Markdown) and figures (PNG) |
@@ -160,7 +161,7 @@ docker run --gpus all --rm tensorflow/tensorflow:2.14.0-gpu \
   python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 ```
 
-**2. Install, test and run everything** (detached; about a day or more in
+**2. Install, test and run both sweeps** (detached; about a day or more in
 total, depending on the GPU):
 
 ```bash
@@ -184,7 +185,7 @@ configurations; each is written atomically and skipped when it exists. So
 simply rerun the same command after an interruption. To split deliberately,
 run `CHUNK=0/3`, `CHUNK=1/3` and `CHUNK=2/3` on different nights (add
 `-e CHUNK=1/3` to `docker run`). To run only some sweeps, add e.g.
-`-e ONLY="recipes spacetime_full"`. A single sweep by hand, inside the
+`-e ONLY="spacetime_full"`. A single sweep by hand, inside the
 container:
 
 ```bash
@@ -199,12 +200,12 @@ laptop results:
 
 | sweep | seeds per rule | what it adds |
 |---|---|---|
-| `recipes` | 1024 | failure rate of the recipes below about 1e-5 (262,144 runs each) |
-| `minimal_grid` | 128 | per-rule rates to about +-4 % |
-| `onestep_ablations` | 128 | idem, incl. the 2024 recipe |
-| `recipe_robustness` | 128 | idem |
 | `width_depth_full` | 64 | H up to 128, D up to 2, three heads, 2024 pretraining filter at every width |
 | `spacetime_full` | 32 | all 256 rules, 16 configurations of 32 cells, T up to 16, 5120 steps, wide net |
+
+The high-seed sweeps (`recipes` at 1024 seeds; `minimal_grid`,
+`onestep_ablations`, `recipe_robustness` at 128) ran on the laptop instead
+(next section); the script lists how to repeat them on the GPU.
 
 **4. Bring the results back.** The summaries and figures land in
 `experiments/training/results/<sweep>-ws/` (small CSV/Markdown/PNG files).
@@ -242,3 +243,17 @@ would take hundreds of hours.
 ```bash
 WORKERS=4 bash experiments/training/laptop.sh      # from Git Bash, with the project's Python on PATH
 ```
+
+It ran on 29 September 2026 in 2 h 39 min with 4 workers; the results are in
+REPORT.md, section 6. The configuration of `ca_emulators.training.train_recipe`
+(`recipe_package` in `configs/recipes.json`) was added afterwards and run
+separately at 128 and 1024 seeds:
+
+```bash
+python sweep.py configs/recipes.json --seeds 1024 --tag large --only recipe_package --workers 4
+python analyse.py recipes-large --grid recipe_minimal,head_only_2024
+```
+
+Its single failure (rule 89) led to a rule-89 test with 65,536 fresh seeds in
+four configurations (`results/recipes-rule89/`,
+`results/recipe_robustness-rule89/`; commands in REPORT.md, "Reproducing").

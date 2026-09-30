@@ -72,9 +72,12 @@ The 2024 recipe behind Fig. 3 trains the emulator from random weights in about 8
 runs and never for rule 1. A study over all 256 rules and many seeds
 ([`experiments/training/REPORT.md`](experiments/training/REPORT.md)) traced this to the
 output head (a ReLU before a tanh leaves some neighbourhoods without gradient). Its
-recommended recipe was exact in all 32768 runs (every rule × 128 seeds): states fed as
+recommended recipe was exact in all 262144 runs (every rule × 1024 seeds): states fed as
 ±1, softplus detectors, a linear rule-table layer read as a logit, binary cross-entropy,
-Adam with learning rate 0.02 (41 parameters).
+Adam with learning rate 0.02 (41 parameters). `train_recipe` runs it on the de Bruijn
+configuration and was exact in 262143 of 262144 runs; the exception is a rare plateau of
+rule 89 (about one run in 65,000 of that rule), which `run.exact` reports and another seed
+avoids.
 
 ```python
 from ca_emulators import verify
@@ -152,8 +155,10 @@ docs/provenance.md  figure/claim -> script -> command -> expected -> status
   The rebuilt classes are exact by default (`train_triplet_id` still works, with a
   deprecation warning).
 - **Benchmarks.** The 2024 benchmark ran the CNNs through `model.predict`, once per time
-  step. Most of the few seconds of "fixed cost" of the CNNs in Fig. 5 is the overhead of
-  those calls, not of the networks; see [`experiments/benchmarks/`](experiments/benchmarks/).
+  step. The few seconds of "fixed cost" of the CNNs in Fig. 5 are the overhead of those
+  calls (about 40 ms each), not of the networks. Compiled, the same networks are 13-2000
+  times faster and beat CellPyLib at every point; plain numpy is faster still, except for
+  the smallest diagrams (see [`experiments/benchmarks/REPORT.md`](experiments/benchmarks/REPORT.md)).
   In the samples scenario the dense CNN overtakes CellPyLib between 64 and 128 samples,
   a little earlier than the thesis's "a few hundred samples" (checked in
   `verification/test_c6_benchmark_2024.py`).

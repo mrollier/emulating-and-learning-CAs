@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+Results only; the package is unchanged.
+
+- **Benchmark** (`experiments/benchmarks`): the full CPU run (2,295 jobs, all timed
+  outputs exact) and its report. The CNN "fixed cost" of Fig. 5 is `model.predict`
+  overhead (about 40 ms per call); compiled, the same networks beat CellPyLib at every
+  point, and hand-vectorised numpy beats every CNN variant except on the smallest
+  diagrams. Section 6 of the report proposes wording for the two thesis statements this
+  qualifies.
+- **Training study** (`experiments/training`): the high-seed sweeps (`laptop.sh`; the
+  recommended recipe exact in 262144/262144 runs), the missing wide-network points, and
+  the configuration of `train_recipe` itself (`recipe_package`, 262143/262144). Its one
+  failure is a rare plateau of rule 89 (about 1 in 65,000 runs of that rule, with random
+  batches as well), now documented. `workstation.sh` runs only the two sweeps that need
+  a GPU.
+- **Fixed** in `experiments/training/sweep.py`: parallel workers starting on a fresh
+  output folder could read a half-written `meta.json` and crash. The parent now writes
+  it before starting them.
+- Docs: `docs/workstation.md`, `CLAUDE.md` and the provenance table updated; the C9 row
+  now names the slow test's actual scope (the 88 non-equivalent rules).
+
 ## 1.0.0 (2026-09-29)
 
 A rebuild of the repository as a reproducibility package for the ACRI 2024 paper

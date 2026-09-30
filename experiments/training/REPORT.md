@@ -1,10 +1,10 @@
 # Training ECA emulators reliably: report
 
-Study of how to train, from random weights, a small CNN that emulates an elementary cellular automaton (ECA) **exactly**, for all 256 rules and (nearly) every seed. Everything below was run on the laptop CPU (i7-9850H) on 29 September 2026. Every number comes from `results/` (summaries) or `results/raw/` (one CSV row per trained network; gitignored). No seeds were selected or discarded: each configuration was trained on all listed rules × all listed seeds, and every run counts. Sweeps left for the workstation are marked **[workstation]** with their commands (section 6).
+Study of how to train, from random weights, a small CNN that emulates an elementary cellular automaton (ECA) **exactly**, for all 256 rules and (nearly) every seed. Everything below was run on the laptop CPU (i7-9850H) on 29–30 September 2026: sections 3.1–3.10 with the local sweeps (32–128 seeds per rule), section 6 with the high-seed sweeps (128–1024 seeds per rule, `laptop.sh`). Every number comes from `results/` (summaries) or `results/raw/` (one CSV row per trained network; gitignored). No seeds were selected or discarded: each configuration was trained on all listed rules × all listed seeds, and every run counts. The two sweeps that would need a GPU are marked **[workstation]** (section 7).
 
 ## Summary
 
-- **The 2024 recipe works in 88.3% of runs** (all 256 rules × 32 seeds; 95% CI 87.6–89.0%) and never for rule 1 (0/32). Without its pretraining loop it works in **46.7%**. Only 54% of its exact networks stay exact when iterated without binarisation. A cross-check with the real Keras `train_2024_recipe` agrees rule by rule.
+- **The 2024 recipe works in 88.3% of runs** (all 256 rules × 32 seeds; 95% CI 87.6–89.0%; 88.27% with 128 seeds) and never for rule 1 (0/32; 0/128). Without its pretraining loop it works in **46.7%** (46.3% with 128 seeds). Only 54% of its exact networks stay exact when iterated without binarisation. A cross-check with the real Keras `train_2024_recipe` agrees rule by rule.
 - **The main cause is the output head, not the dead origin (H2 > H1).** The 2024 rule-table layer applies a ReLU before the tanh. Every neighbourhood with target 1 whose output pre-activation starts ≤ 0 gets no gradient.
   - 85% of initialisations start with at least one such "stuck" neighbourhood.
   - Success is 97.6% with none stuck, and 64%, 38%, 27%, 21% and 15% with 1–5 stuck.
@@ -16,15 +16,16 @@ Study of how to train, from random weights, a small CNN that emulates an element
   - Over all rules, odd and even succeed about equally (44.9% vs 48.4%).
 - **The fix is a sigmoid output with binary cross-entropy (BCE), plus a non-dying hidden unit.**
   - Replacing only the head gives 98.3–98.5%.
-  - With ±1 inputs and softplus units (still 41 parameters), Adam at learning rate 0.02 gives **32768/32768 exact runs (all 256 rules × 128 seeds)**, at most 576 steps to exactness.
+  - With ±1 inputs and softplus units (still 41 parameters), Adam at learning rate 0.02 gives **262144/262144 exact runs (all 256 rules × 1024 seeds)**, at most 896 steps to exactness. The failure probability per run is below 1.1 × 10⁻⁵ (one-sided 95%).
   - Every one of those networks is *proved* exact in unbinarised closed loop, forever, by an interval certificate.
   - The recipe is insensitive to the data: full batch, 1 or 64 random configurations per step all give 100%.
+  - The one weakness found at scale is a rare plateau of rule 89, about once in 65,000 runs of that rule (section 6). The de Bruijn check reports it, and another seed fixes it. The package's `train_recipe` (full batch) was exact in 262143 of 262144 runs.
 - **Nothing else rescues the 2024 head.** Encoding, bias, activation, learning rate, batch, full-batch data, 4× more steps, width 64 and depth 2 each leave it at 32–52%.
-- **Wide networks:** with the sigmoid/BCE head, every H ≥ 16 gave 100% (up to H = 64, D = 2 where run), even with the other 2024 choices (ReLU, {0,1} inputs, zero bias, learning rate 0.005).
-- **Templates are never recovered.** Of 743,580 exact minimal networks, 0 have the analytic one-hot detector layer up to permutation; gradient descent finds distributed codes.
+- **Wide networks:** with the sigmoid/BCE head, every H ≥ 16 gave 100% (up to H = 64, D = 2), even with the other 2024 choices (ReLU, {0,1} inputs, zero bias, learning rate 0.005).
+- **Templates are never recovered.** Of 4,501,120 exact minimal networks, 0 have the analytic one-hot detector layer up to permutation; gradient descent finds distributed codes.
 - **Spacetime diagrams:**
   - Loss on all frames works: one-step exact in 100%, 100%, 99.6% and 98.3% of runs for T = 1, 2, 4 and 8.
-  - Final frame only fails: 43% (T=2), 19% (T=4) and 6.8% (T=8).
+  - Final frame only fails: 43% (T=2), 19% (T=4) and 6.8% (T=8). A wider network (H = 16, D = 1) does not fix it (12.8% at T=8).
   - A curriculum over T fixes it: 98.7% at T=8 with the final frame only.
   - Straight-through binarisation helps little.
   - BPTT helps the 2024 head (44% → 69% at T=4) and harms a linear head.
@@ -165,18 +166,18 @@ Each row changes one thing with respect to `nopre`.
 
 ![grid](results/minimal_grid/fig_success_by_config.png)
 
-### 3.5 The recipes at scale (`results/recipes/`; all 256 rules × 128 seeds = 32768 runs each; all use `sigmoid_bce`, H = 8)
+### 3.5 The recipes at scale (`results/recipes/`, all 256 rules × 128 seeds = 32768 runs each; `results/recipes-large/`, × 1024 seeds = 262144 runs each; all use `sigmoid_bce`, H = 8)
 
-| recipe | exact | failures | exact that stay exact in closed loop | certified | median / max steps to exact |
-|---|---|---|---|---|---|
-| **±1, softplus, bias 0, learning rate 0.02** (`recipe_minimal_lr0.02`) | **100%** | **0** | **100%** | **100%** | 64 / 576 |
-| ±1, softplus, bias 0, learning rate 0.005 (`recipe_minimal`) | 100% | 0 | 100% | 99.64% | 128 / 1920 |
-| ±1, softplus, learning rate 0.05, 640 steps (`recipe_fast`) | 99.997% | 1 (rule 150) | 100% | 99.98% | 32 / 320 |
-| ±1, leaky ReLU, bias 0.1 | 99.99% | 3 | 99.997% | 99.2% | 128 / 1792 |
-| {0,1}, softplus, bias 0.1 | 99.997% | 1 | 100% | 99.2% | 256 / 1792 |
-| 2024 with only the head replaced ({0,1}, ReLU, bias 0) | 98.34% | 543 | 99.6% | 80.8% | 128 / 2432 |
+| recipe | exact (128 seeds) | exact (1024 seeds) | failures (1024 seeds) | exact that stay exact in closed loop | certified | median / max steps to exact |
+|---|---|---|---|---|---|---|
+| **±1, softplus, bias 0, learning rate 0.02** (`recipe_minimal_lr0.02`) | **100%** | **100%** | **0** | **100%** | **100%** | 64 / 896 |
+| ±1, softplus, bias 0, learning rate 0.005 (`recipe_minimal`) | 100% | 100% | 0 | 100% | 99.64% | 128 / 1920 |
+| ±1, softplus, learning rate 0.05, 640 steps (`recipe_fast`) | 99.997% | 99.9989% | 3 (rules 54, 150, 201) | 99.999% | 99.97% | 32 / 640 |
+| ±1, leaky ReLU, bias 0.1 | 99.99% | 99.980% | 52 (31 rules) | 99.999% | 99.2% | 128 / 2432 |
+| {0,1}, softplus, bias 0.1 | 99.997% | 99.994% | 17 (6 rules) | 99.995% | 99.2% | 256 / 2496 |
+| 2024 with only the head replaced ({0,1}, ReLU, bias 0) | 98.34% | 98.30% | 4466 (173 rules) | 99.6% | 81.0% | 128 / 2560 |
 
-With 0 failures in 32768 runs, the failure probability of the two `recipe_minimal` variants is below 9.1 × 10⁻⁵ each (one-sided 95% bound, 3/n).
+The last four columns are for 1024 seeds. With 0 failures in 262144 runs, the failure probability of the two `recipe_minimal` variants is below 1.1 × 10⁻⁵ each (one-sided 95% bound, 3/n). With learning rate 0.02 the slowest of the 262144 networks needed 896 steps, so the 2560 steps of the recipe leave a margin of almost 3.
 
 ### 3.6 Robustness of the recipe (`results/recipe_robustness/`; one factor at a time around `recipe_minimal`, 8192 runs each)
 
@@ -198,14 +199,14 @@ With 0 failures in 32768 runs, the failure probability of the two `recipe_minima
 - **At learning rate 0.005, at least about 1280 steps are needed.**
 - **4–6 detector channels suffice for nearly every run.** The width-4 failures are non-separable rules (e.g. 86, 154, 105, 149, 30).
 
-### 3.7 Over-parameterisation (`results/width_depth/`; 2048 runs per point, 4096 for some 2024-head points, 1024 for `sigmoid_bce` H32 D2 and H64 D1)
+### 3.7 Over-parameterisation (`results/width_depth/`; 2048 runs per point, 4096 for some 2024-head points)
 
 ![width/depth](results/width_depth/fig_width_depth.png)
 
 | head | H = 8 | H = 16 | H = 32 | H = 64 |
 |---|---|---|---|---|
 | 2024 `relu_tanh_mse`, D = 0 / 1 / 2 | 47.0 / 50.2 / 52.5% | 48.2 / 50.6 / 51.1% | 49.7 / 50.5 / 51.7% | 51.6 / 49.9 / 49.5% |
-| `sigmoid_bce` (otherwise 2024 settings), D = 0 / 1 / 2 | 98.0 / 99.2 / 99.0% | 100 / 100 / 100% | 100 / 100 / 100% | 100 / 100 / [workstation] |
+| `sigmoid_bce` (otherwise 2024 settings), D = 0 / 1 / 2 | 98.0 / 99.2 / 99.0% | 100 / 100 / 100% | 100 / 100 / 100% | 100 / 100 / 100% |
 
 **Width and depth do not rescue the 2024 head.**
 - Rule 1 stays at 0 at every size, and the gradient at 000 remains zero whatever the width.
@@ -213,7 +214,7 @@ With 0 failures in 32768 runs, the failure probability of the two `recipe_minima
 - Depth does improve the 2024 head's closed-loop rate of exact networks: from 33% (H8 D0) to 99.8% (H64 D2).
 
 **With the BCE head, width 16 already removes the last 1–2% of failures.**
-- 100% at every depth run (the H=8 failures are dead-unit failures), with 95–100% certified.
+- 100% at every depth (the H=8 failures are dead-unit failures), with 94.6–100% certified.
 - Wide networks cost 2–100× more compute per run than the minimal one (e.g. H64 D1: about 2.6 CPU-s per network vs 0.05 s).
 
 ### 3.8 Which rules are hard (`families.md` in each folder)
@@ -245,7 +246,7 @@ In the analytic network, each detector fires on exactly one neighbourhood (an 8 
 | sigmoid/BCE, {0,1}, ReLU | 1005 | **0** | 2.4% | 20.4% | 4.0 | 10% |
 | recommended recipe | 1024 | **0** | 0.1% | 0.1% | 4.3 | 99% |
 
-**No sweep recovered it at all.** Over all sweeps, 0 of **743,580** exact minimal networks have a permutation-matrix firing pattern, and none has a pure single-neighbourhood unit for every neighbourhood.
+**No sweep recovered it at all.** Over all one-step sweeps (local and high-seed), 0 of **4,501,120** exact minimal networks have a permutation-matrix firing pattern, and none has a pure single-neighbourhood unit for every neighbourhood.
 
 **Trained networks use a distributed code instead.** Each unit is a half-space of the cube that typically splits the 8 neighbourhoods about in half, and the rule-table layer combines 6–8 of them. The analytic template is an isolated point in a large set of exact solutions, not an attractor of training.
 
@@ -270,6 +271,8 @@ In the analytic network, each detector fires on exactly one neighbourhood (an 8 
 | T=8, final frame only, curriculum | **98.7%** | 98.7% | 98.2% | 61.9% |
 | T=4 / 8, final frame only, straight-through binarisation | 23.2 / 12.6% | 28.7 / 17.1% | 21.2 / 9.7% | 39 / 36% |
 | T=8, all frames, straight-through binarisation | 96.0% | 96.0% | 94.7% | 86.1% |
+| wide network (H=16, D=1), T=8, all frames | 99.9% | 99.9% | 99.7% | 99.9% |
+| wide network (H=16, D=1), T=8, final frame only | 12.8% | 15.6% | 12.2% | 62% |
 | 2024 head, T=1 / T=4 all frames | 44.0 / **68.6%** | 44.0 / 69.3% | 16.9 / 59.5% | 2.6 / 1.4% |
 | linear head, T=1 / T=4 all frames | 100 / 48.4% | 100 / 48.6% | 9.9 / 5.1% | 0 / 0% |
 
@@ -277,6 +280,7 @@ In the analytic network, each detector fires on exactly one neighbourhood (an 8 
 - With all frames supervised, training through T steps costs little (≥ 98.3% up to T=8).
 - With the final frame only, training fails increasingly with T. Identifiability explains only part of this, since several rules can share a T-step map; the T-step map itself is found in only 49–9% of runs, so the optimisation fails too.
 - A curriculum that starts at T=1 and doubles T in equal stages solves it (98.7% at T=8, final frame only).
+- Width does not: the wide network (H = 16, D = 1, 353 parameters) reaches 12.8% at T=8 with the final frame only, against 6.8% for the minimal one. With all frames it is 99.9% (703 of 704 runs).
 - Straight-through binarisation helps only marginally.
 
 **BPTT's effect on closed loop depends on the head.**
@@ -286,7 +290,7 @@ In the analytic network, each detector fires on exactly one neighbourhood (an 8 
 
 ![spacetime](results/spacetime/fig_spacetime.png)
 
-**Not run locally [workstation]:** the wide network (H=16, D=1) at T=8, and all 256 rules, larger training configurations, T=16 and 5120 steps (`spacetime_full`).
+**Not run [workstation]:** all 256 rules, larger training configurations, T=16, 5120 steps and a wider network (H = 32, D = 1) (`spacetime_full`, section 7).
 
 ## 4. Recommended recipes
 
@@ -296,11 +300,11 @@ In the analytic network, each detector fires on exactly one neighbourhood (an 8 
 2. Periodic padding, then `Conv1D(8, 3)` with **softplus** (leaky ReLU with bias 0.1 is a close second), He-normal kernel and zero bias.
 3. Rule-table layer `Conv1D(1, 1)` with a bias and **no activation**, giving a logit z. Predict sigmoid(z) > 0.5, i.e. z > 0.
 4. Binary cross-entropy from logits.
-5. Adam with learning rate **0.02**, 2560 steps. At least 640 steps is enough in practice: the maximum over 32768 runs was 576. Any learning rate from 0.005 to 0.1 works with at least 1280 steps.
+5. Adam with learning rate **0.02**, 2560 steps. The slowest of 262144 runs was exact after 896 steps, so do not go below about 1024. Any learning rate from 0.005 to 0.1 works with at least 1280 steps (learning rate 0.005 needed up to 1920).
 6. Any data containing the 8 neighbourhoods: the de Bruijn configuration 00010111 as a full batch, or random configurations.
-7. Check exactness with the de Bruijn certificate. Optionally prove closed-loop exactness with `ensemble.interval_certificate`.
+7. Check exactness with the de Bruijn certificate, and retrain with another seed in the rare case that it fails (rule 89 about once in 65,000 runs; section 6). Optionally prove closed-loop exactness with `ensemble.interval_certificate`.
 
-**Result:** 32768/32768 runs exact (all rules × 128 seeds), all proved closed-loop exact. The recipe treats every rule and its complement alike.
+**Result:** 262144/262144 runs exact (all rules × 1024 seeds), all proved closed-loop exact. The recipe treats every rule and its complement alike. `ca_emulators.training.train_recipe` implements it on the de Bruijn configuration: 262143/262144, the one failure being the rule-89 plateau of section 6.
 
 ```python
 x_in = tf.keras.Input((N, 1))
@@ -331,26 +335,82 @@ Replacing only the head gives 98.3%: drop the ReLU of the rule-table layer and u
 - The ensemble draws each batch from a pool of 65536 random batches, not from the 2024 fixed set of 4096 configurations. For networks with receptive field 3 both only reweight the 8 neighbourhoods. The Keras cross-check agrees, but covers only 36 runs.
 - The 2024 pretraining loop was capped at 32 candidates (2024: unbounded; `train_2024_recipe`: 200). Uncapped, it does not terminate for rule 1.
 - Results depend slightly on XLA vs non-XLA and CPU vs GPU kernels. Individual borderline runs could flip, but the rates cannot move noticeably.
-- Local sample sizes are modest in places:
-  - 32 seeds per rule for the grids (per-rule rates ±15%);
-  - 128 seeds for the recipes;
-  - 8 seeds (some 4 or 16) for width/depth;
+- Sample sizes:
+  - Sections 3.1-3.4 use 32 seeds per rule for the grids (per-rule rates ±17% at worst); section 6 repeats them with 128 (±9%).
+  - 128 seeds for the recipes, 1024 in section 6.
+  - 8 seeds (some 4 or 16) for width/depth.
   - 88 representatives × 8 seeds, with small training configurations, for spacetime.
+- The high-seed sweeps reuse the seeds of the local ones (seeds 0-127 contain seeds 0-31), so they are a larger sample, not an independent replication.
 - The spacetime phase used learning rate 0.005, not the final 0.02.
 - The Wolfram class assignment (in `analyse.py`) is the commonly cited one, used only as a coarse grouping.
-- The GPU/workstation path has not been run yet.
+- The GPU/workstation path has not been run.
 
-## 6. What the workstation sweep should add [workstation]
+## 6. High-seed sweeps (`results/<sweep>-large/`)
 
-`workstation.sh` (README.md, section "Workstation") runs everything with `--tag ws --max-members 8192 --mem-mb 1000 --require-gpu` inside `tensorflow/tensorflow:2.14.0-gpu`:
+`laptop.sh` ran the four one-step sweeps again on the laptop CPU (29 September 2026, 2 h 39 min with 4 worker processes, together with the gap runs of sections 3.7 and 3.10):
+
+| sweep | seeds per rule | runs per configuration | configurations |
+|---|---|---|---|
+| `recipes` | 1024 | 262,144 | 6 (and `recipe_package`, below) |
+| `minimal_grid` | 128 | 32,768 | 48 |
+| `onestep_ablations` | 128 | 32,768 | 16 |
+| `recipe_robustness` | 128 | 32,768 | 19 |
+
+**Every conclusion of sections 3.1-3.9 stands.**
+- Every success rate moved by at most 0.9 percentage points; for example, the 2024 recipe went from 88.3% to 88.27% (95% CI 87.91-88.61%).
+- The mechanism statistics replicate to within about 2 points:
+  - initialisations with a stuck neighbourhood: 85.1% (was 85.0%);
+  - success with 0-5 stuck neighbourhoods: 97.2, 62, 38, 27, 22 and 17%;
+  - gradient at 000 exactly zero: 100%;
+  - failed `nopre` runs ending stuck: 97.8%.
+- Rule 1 fails in 0/128 seeds, with or without pretraining.
+- The only changes are in details that 32 seeds could not resolve:
+
+| statement | local sweeps | high-seed sweeps |
+|---|---|---|
+| recommended recipe (`recipe_minimal_lr0.02`) | 32768/32768, at most 576 steps | **262144/262144**, at most 896 steps, all certified |
+| `recipe_minimal` (learning rate 0.005) | 32768/32768 | 262144/262144, 99.64% certified |
+| `recipe_fast` | 1 failure (rule 150) | 3 failures (rules 54, 150, 201) |
+| next-worst rules under the 2024 recipe (3.1) | 137, 161, 233, 129, 65, 9, 150 (47-56%) | 129, 193, 233, 161, 225, 137, 169 (51-58%) |
+| odd vs even rules with one / two 1s, `nopre` (3.2) | 0 vs 51% / 26 vs 46% | 0 vs 48% / 24 vs 44% |
+| complement pairs, `nopre`: odd vs complement (3.2) | 47.8 vs 43.6%, odd better in 38 of 64 | 47.1 vs 43.3%, odd better in 41 of 64 |
+| complement pairs, 2024 recipe (3.2) | 84.5 vs 89.7% | 84.5 vs 88.6% |
+| rule 1 with bias 0.1 / ±1 inputs (3.2) | 44% / 66% | 38% / 52% |
+| `sigmoid_bce` combinations at 100% (3.4) | four | two: ±1 inputs + softplus, bias 0 or 0.1 (32768/32768 each). {0,1} + bias 0.1 + softplus: 1 failure (rule 108); ±1 + bias 0.1 + leaky ReLU: 3 |
+| `linear_mse` combinations at 100% (3.4) | ±1 + softplus, bias 0 or 0.1 | bias 0.1 only (bias 0: 1 failure, rule 105) |
+| learning rate 0.02 / 0.05 / 0.1 (3.6) | 100% each | 100% each (32768/32768), all certified, at most 512 / 384 / 192 steps |
+| full batch of the 8 neighbourhoods, learning rate 0.005 (3.6) | 8192/8192 | 32767/32768 (1 failure, rule 89) |
+| width 6 / width 4 (3.6) | 99.98 / 99.32% | 99.985 / 99.32% (width 6: 5 failures in rules 101, 146, 147, 154, 198) |
+
+**The configuration of `ca_emulators.training.train_recipe`** (`recipe_package`: the recommended recipe, but with the 8 neighbourhoods as one full batch, as the package trains on the de Bruijn configuration) was added to `configs/recipes.json` and run at 128 and 1024 seeds on 30 September.
+
+| configuration | 128 seeds per rule | 1024 seeds per rule | certified | median / max steps |
+|---|---|---|---|---|
+| `recipe_package` (full batch, learning rate 0.02) | 32768/32768 | 262143/262144 (1 failure: rule 89) | 100% | 64 / 1280 |
+
+**A rare plateau for rule 89.** The failure, and the one of the full batch at learning rate 0.005 above, are both rule 89 (class {45, 75, 89, 101}, among the hardest in section 3.8). Both runs ended with two neighbourhoods (010 and 011) at logit ≈ 0, i.e. output 0.5, so the loss sits at 2 ln 2 / 8 ≈ 0.173. To tell whether the full batch causes this, rule 89 was trained with 65,536 fresh seeds (1024-66559) in each of four configurations (`results/recipes-rule89/`, `results/recipe_robustness-rule89/`):
+
+| rule 89, 65,536 runs each | random batches | full batch |
+|---|---|---|
+| learning rate 0.005 | 0 failures (`recipe_minimal`) | 4 failures (`rm_full`) |
+| learning rate 0.02 | 1 failure (`recipe_minimal_lr0.02`) | 1 failure (`recipe_package`) |
+
+- **All failures are the same plateau:** loss 0.170-0.174, no run ever exact, one or both of neighbourhoods 010 and 011 wrong.
+- **At learning rate 0.02 the data make no difference.** The recommended recipe and `train_recipe` both fail about once in 65,000 runs of rule 89 (95% CI 0.3-8.6 × 10⁻⁵ per run).
+- **At learning rate 0.005 the full batch may be more exposed** (4 against 0), but 4 events do not establish it.
+- Averaged over all 256 rules, a rate of this size at rule 89 alone is about 6 × 10⁻⁸ per run. This is consistent with 0 failures in 262,144 runs of the recommended recipe, and with the bound of 1.1 × 10⁻⁵.
+- **Practical consequence:** the recipe fails in about one of 65,000 runs of rule 89, and in about one of 10⁷ runs averaged over all rules. Such a run is always detected: `train_recipe` returns `exact=False`, from the de Bruijn check. Retrained with another seed, it succeeds.
+
+The summary's "the recipe is insensitive to the data" holds at the resolution of 128 seeds per rule; this plateau is the only exception found.
+
+## 7. What only the workstation can add [workstation]
+
+`workstation.sh` (README.md, section "Workstation") runs the two sweeps that are too large for a CPU, with `--tag ws --max-members 8192 --mem-mb 1000 --require-gpu` inside `tensorflow/tensorflow:2.14.0-gpu`:
 
 | sweep | seeds per rule | purpose |
 |---|---|---|
-| `recipes` | 1024 (262,144 runs per recipe) | failure bound about 1e-5 for `recipe_minimal_lr0.02` and `recipe_fast` |
-| `minimal_grid`, `onestep_ablations` | 128 | per-rule rates to about ±4%; sharper H1 picture for low-weight odd rules |
-| `recipe_robustness` | 128 | idem |
-| `width_depth_full` | 64 | H up to 128, D up to 2, three heads (2024, sigmoid/BCE, recipe incl. H = 4); 2024 pretraining filter at every width. Completes the missing sigmoid/BCE H64 D2 point and the smallest reliable H |
-| `spacetime_full` | 32 | all 256 rules; 16 configurations of 32 cells; T ∈ {1, 2, 4, 8, 16}, all/final frames, curriculum, straight-through; 2024 and linear heads; wide network (H = 32, D = 1). Completes the missing wide-network spacetime runs |
+| `width_depth_full` | 64 | H up to 128, D up to 2, three heads (2024, sigmoid/BCE, recipe incl. H = 4); 2024 pretraining filter at every width. Gives the smallest reliable H per head |
+| `spacetime_full` | 32 | all 256 rules; 16 configurations of 32 cells; T ∈ {1, 2, 4, 8, 16}, all/final frames, curriculum, straight-through; 2024 and linear heads; wider network (H = 32, D = 1) |
 
 Commands:
 
@@ -372,13 +432,15 @@ Also worth running there (not scripted yet):
 - training nuCA emulators (`NucaEmulator`) with the same head;
 - a sparsity or one-hot pressure, to test whether the analytic template can be made an attractor.
 
-## 7. Suggested changes to `src/ca_emulators` (for the owner to approve)
+## 8. Changes made to `src/ca_emulators`
 
-1. **Make the rule-table activation configurable in `EcaEmulator` and `NucaEmulator`.** It is hard-coded to ReLU, which is harmless for the analytic 0/1 weights but is the main obstacle to training (H2). Default `"relu"` keeps the golden outputs unchanged; `None` for trainable models.
-2. **Add an `input_encoding="pm1"` option** (a 2s − 1 layer). The analytic weights for ±1 inputs are the pattern signs with bias −2.
-3. **Add `ca_emulators.training.train_recipe(rule, N, seed)`.** It would implement section 4 and return the model with its de Bruijn verdict and certificate. Keep `train_2024_recipe` as the faithful reproduction.
-4. **Document in `train_2024_recipe`** that its pretraining loop cannot succeed for rule 1 (loss floor about 1/8 > 0.1), so it stops only at `max_restarts`; the 2024 original looped forever.
-5. **Optionally add `ca_emulators.verify`** with `is_exact(model)` (de Bruijn certificate) and the interval certificate of closed-loop exactness.
+The owner approved these on 29 September 2026; they are part of release 1.0.0.
+
+1. **The rule-table activation is configurable** in `EcaEmulator` and `NucaEmulator` (`rule_activation`). The default `"relu"` keeps the analytic emulators and the golden outputs unchanged; `None` gives a trainable logit (H2).
+2. **`input_encoding="pm1"`** adds a 2s − 1 layer; the analytic weights for ±1 inputs are the pattern signs with bias −2.
+3. **`ca_emulators.training.train_recipe(rule, seed=..., steps=2560, learning_rate=0.02)`** implements section 4 on the de Bruijn configuration as one full batch, and returns the model with its de Bruijn verdict and interval certificate. `train_2024_recipe` stays the faithful reproduction.
+4. **`train_2024_recipe` documents** that its pretraining loop cannot succeed for rule 1 (loss floor about 1/8 > 0.1), so it stops only at `max_restarts`; the 2024 original looped forever.
+5. **`ca_emulators.verify`** provides `is_exact` (de Bruijn certificate), `interval_certificate` and `closed_loop_exact`.
 
 ## Reproducing (from `experiments/training/`)
 
@@ -390,6 +452,10 @@ python sweep.py configs/recipes.json --workers 4            &&  python analyse.p
 python sweep.py configs/recipe_robustness.json --workers 4  &&  python analyse.py recipe_robustness
 python sweep.py configs/width_depth.json --seeds 8 --workers 3          &&  python analyse.py width_depth
 python sweep.py configs/spacetime.json --max-members 352 --workers 4    &&  python analyse.py spacetime
+WORKERS=4 bash laptop.sh       # section 6: high-seed sweeps and the gap runs, ~2.7 h
+python sweep.py configs/recipes.json --seeds 1024 --tag large --only recipe_package --workers 4  &&  python analyse.py recipes-large --grid recipe_minimal,head_only_2024
+python sweep.py configs/recipes.json --rules 89 --seeds 1024:66560 --tag rule89 --only recipe_package,recipe_minimal_lr0.02,recipe_minimal --workers 4  &&  python analyse.py recipes-rule89
+python sweep.py configs/recipe_robustness.json --rules 89 --seeds 1024:66560 --tag rule89 --only rm_full --workers 4  &&  python analyse.py recipe_robustness-rule89
 python validate_2024.py        # Keras cross-check, ~1 h
 python templates.py            # template analysis
 ```

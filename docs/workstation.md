@@ -1,12 +1,19 @@
 # Running the long jobs on the Linux workstation
 
-Two jobs are too long for the laptop and run on the workstation (Linux,
-NVIDIA T400 with 2 GB, driver 570 / CUDA 12.8):
+The long jobs were meant for the workstation (Linux, NVIDIA T400 with 2 GB,
+driver 570 / CUDA 12.8). When it was out of reach, the CPU parts ran
+overnight on the laptop instead (29-30 September 2026):
 
-- the new emulation benchmark, `experiments/benchmarks` (about 6-8 hours on
-  the laptop; CPU, with an optional GPU extra);
-- the large sweeps of the training study, `experiments/training` (see its
-  README for the sweep commands; the ensemble engine uses the GPU).
+- the emulation benchmark, `experiments/benchmarks` (CPU, 8 hours; results in
+  its `results/` and `REPORT.md`);
+- the high-seed sweeps of the training study (`experiments/training/laptop.sh`,
+  2.7 hours).
+
+What is left for the workstation, when it is reachable:
+
+- the GPU variant of the benchmark (section 3, "optional");
+- the two training sweeps that need a GPU, `width_depth_full` and
+  `spacetime_full` (`experiments/training/workstation.sh`).
 
 The re-run of the *published* benchmark protocol
 (`scripts/benchmark_published.py`) stays on the laptop: it has the same CPU as
@@ -55,11 +62,15 @@ out, and follow the log:
 docker run --gpus all -d --name ca-bench -v "$PWD":/work -w /work \
     -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) tensorflow/tensorflow:2.14.0-gpu \
     bash -lc "pip install -q -r requirements.txt && pip install -q -e . && \
-              python experiments/benchmarks/run.py --all; chown -R \$HOST_UID:\$HOST_GID /work"
+              python experiments/benchmarks/run.py --all --device gpu --threads default; \
+              chown -R \$HOST_UID:\$HOST_GID /work"
 docker logs -f ca-bench
 ```
 
 ## 3. The emulation benchmark
+
+The CPU run is done (on the laptop). To repeat it here, or to add the GPU
+variant:
 
 ```bash
 python experiments/benchmarks/run.py --all --dry-run | head     # 2295 jobs
@@ -92,4 +103,4 @@ git push                  # to main, or to cleanup/v1 if you cloned that branch
 ```
 
 On the laptop, `git pull` brings them in; the reports (`REPORT.md` in both
-folders) are then completed from them.
+folders) are then extended with them.

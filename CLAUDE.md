@@ -53,8 +53,10 @@ clone `../learning_automata`, which was used once to capture `data/golden` and t
 deleted (2026-09-29, with the owner's approval); its package list is
 `docs/env/paper-env-2024.txt`, and its gitignored outputs (figures, the 85 trained 2024
 models, the timing data) are archived in `../learning_automata-outputs-2024.zip`.
-Long runs (the benchmark in `experiments/benchmarks`, the large training sweeps) happen
-on the owner's Linux workstation, see `docs/workstation.md`.
+Long runs: the CPU benchmark (`experiments/benchmarks`, 8 h) and the high-seed training
+sweeps (`experiments/training/laptop.sh`, 2.7 h) ran overnight on the laptop on
+29-30 September 2026. The GPU benchmark variant and the two GPU-sized training sweeps
+(`workstation.sh`) are left for the owner's Linux workstation, see `docs/workstation.md`.
 
 ## Conventions
 - UK English in prose and comments (behaviour, neighbourhood, initialise).

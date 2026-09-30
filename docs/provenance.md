@@ -48,7 +48,7 @@ cold timings and records a calibration workload.
 | C6 The statements of Sec. 7.1.4 about Fig. 7.5 hold for the archived timings | Sec. 3 / 7.1.4 | `verification/test_c6_benchmark_2024.py` | ✅, with one nuance: in the samples scenario the dense CNN overtakes CellPyLib between S = 64 and 128 (4.11 s vs 4.52 s at S = 128), not only from "a few hundred samples" |
 | C7 The architecture can be trained from random weights to emulate rule 54 | Sec. 1.2 / 7.1.1, Fig. 3 | `verification/test_c7_training_recipe.py` (slow) | ✅ with the seeded 2024 recipe |
 | C8 The rebuilt package gives the same outputs as the 2024 code | – | `verification/test_golden_2024.py` | ✅ bit for bit |
-| C9 (new, not in the paper) With the recommended recipe, training from random weights is exact for every rule and stays exact in unbinarised closed loop | `experiments/training/REPORT.md` (32768/32768 runs) | `verification/test_c9_training_recipe.py` (rules 1, 30, 54, 105, 110, 150; all 256 rules in the slow suite) | ✅ |
+| C9 (new, not in the paper) With the recommended recipe, training from random weights is exact for every rule and stays exact in unbinarised closed loop | `experiments/training/REPORT.md` (262144/262144 runs, every rule × 1024 seeds) | `verification/test_c9_training_recipe.py` (rules 1, 30, 54, 105, 110, 150; the 88 non-equivalent rules in the slow suite) | ✅ |
 | "The output of both CNNs was verified to be bit-identical to that of CellPyLib" | Sec. 7.1.4 | C2, C4 and `verification/test_reference.py` (numpy reference = CellPyLib for all 256 rules) | ✅ |
 
 Run the fast checks with `python -m pytest -m "not slow"` (about a minute) and all of

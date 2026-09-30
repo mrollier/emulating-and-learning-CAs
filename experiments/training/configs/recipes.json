@@ -1,6 +1,6 @@
 {
   "name": "recipes",
-  "description": "Phase A4: the candidate recipes for the minimal network at 128 seeds per rule (32768 runs each), to bound failure rates well below 1/8192: the runner-up combinations of phase A2, the 2024 recipe with only its output head replaced, and the recommended recipe with the learning rate raised after phase A5 ('recipe_minimal_lr0.02'; 'recipe_fast': lr 0.05 and 640 steps).",
+  "description": "Phase A4: the candidate recipes for the minimal network at 128 seeds per rule (32768 runs each), to bound failure rates well below 1/8192: the runner-up combinations of phase A2, the 2024 recipe with only its output head replaced, and the recommended recipe with the learning rate raised after phase A5 ('recipe_minimal_lr0.02'; 'recipe_fast': lr 0.05 and 640 steps), and the configuration of ca_emulators.training.train_recipe ('recipe_package': lr 0.02, the 8 neighbourhoods as one full batch).",
   "base_seed": 2024,
   "rules": "all",
   "seeds": 128,
@@ -43,6 +43,13 @@
       "lr": 0.05,
       "steps": 640,
       "eval_every": 32
+    },
+    {
+      "name": "recipe_package",
+      "enc": "pm1",
+      "act": "softplus",
+      "lr": 0.02,
+      "data": "full"
     }
   ],
   "smoke": {

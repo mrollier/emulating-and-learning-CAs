@@ -2,9 +2,9 @@
 # Full sweeps of the training study for the Linux workstation (NVIDIA T400,
 # 2 GB), run inside tensorflow/tensorflow:2.14.0-gpu (see README.md).
 #
-#   bash workstation.sh                 # everything, in order
+#   bash workstation.sh                 # both sweeps, in order
 #   CHUNK=1/3 bash workstation.sh       # one third of every sweep (other nights: 0/3, 2/3)
-#   ONLY="recipes spacetime_full" bash workstation.sh
+#   ONLY="spacetime_full" bash workstation.sh
 #
 # Output goes to results/raw/<sweep>-ws/ (resumable: existing parts are
 # skipped) and the summaries to results/<sweep>-ws/.
@@ -15,11 +15,10 @@ CHUNK="${CHUNK:-0/1}"
 GPU_OPTS="--tag ws --chunk $CHUNK --max-members 8192 --mem-mb ${MEM_MB:-1000} --require-gpu"
 
 # sweep file | seeds | question it answers at scale
+# The high-seed sweeps ran on the laptop CPU instead (laptop.sh, 29 September
+# 2026; summaries in results/<sweep>-large/). To repeat them on the GPU, add:
+#   "recipes 1024" "minimal_grid 128" "onestep_ablations 128" "recipe_robustness 128"
 SWEEPS=(
-  "recipes 1024"             # failure rate of the recipes below 1e-5 (262,144 runs each)
-  "minimal_grid 128"         # per-rule success rates to about +-4 %
-  "onestep_ablations 128"
-  "recipe_robustness 128"
   "width_depth_full 64"      # H up to 128, three heads, 2024 pretraining filter
   "spacetime_full 32"        # all 256 rules, T up to 16, larger configurations
 )
