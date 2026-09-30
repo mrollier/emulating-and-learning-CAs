@@ -1,0 +1,214 @@
+{
+  "tag": "full",
+  "command": "python.exe experiments/benchmarks/run.py --all --resume",
+  "started": "2026-09-29T23:15:19",
+  "settings": {
+    "repeats": 10,
+    "min_time": 0.1,
+    "budget": 60.0,
+    "cold_budget": 120.0,
+    "core_budget": 600.0,
+    "core_cold_budget": 600.0,
+    "timeout_margin": 180.0,
+    "max_selector_mb": 512.0,
+    "device": "cpu"
+  },
+  "methods": [
+    "cellpylib",
+    "numpy",
+    "numpy_lut",
+    "predict:lc1",
+    "eager:lc1",
+    "compiled:lc1",
+    "xla:lc1",
+    "while_loop:lc1",
+    "while_loop_xla:lc1",
+    "unrolled:lc1",
+    "predict:dense",
+    "eager:dense",
+    "compiled:dense",
+    "xla:dense",
+    "while_loop:dense",
+    "while_loop_xla:dense",
+    "unrolled:dense",
+    "compiled:lc2",
+    "xla:lc2",
+    "compiled:lc3",
+    "compiled:elem",
+    "xla:elem",
+    "while_loop_xla:elem"
+  ],
+  "threads": [
+    "default",
+    "single"
+  ],
+  "ranges": [
+    "core",
+    "extended"
+  ],
+  "scenarios": {
+    "NR": {
+      "name": "NR",
+      "vary": "n_rules",
+      "fixed": {
+        "N": 256,
+        "T": 32,
+        "S": 32
+      },
+      "core": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "extended": [],
+      "label": "number of rules $N_R$"
+    },
+    "T": {
+      "name": "T",
+      "vary": "T",
+      "fixed": {
+        "N": 64,
+        "n_rules": 4,
+        "S": 32
+      },
+      "core": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100
+      ],
+      "extended": [
+        200,
+        500,
+        1000
+      ],
+      "label": "rows of the diagram $T$"
+    },
+    "N": {
+      "name": "N",
+      "vary": "N",
+      "fixed": {
+        "n_rules": 4,
+        "T": 32,
+        "S": 32
+      },
+      "core": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        192,
+        224,
+        256
+      ],
+      "extended": [
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384
+      ],
+      "label": "number of cells $N$"
+    },
+    "S": {
+      "name": "S",
+      "vary": "S",
+      "fixed": {
+        "N": 32,
+        "n_rules": 4,
+        "T": 32
+      },
+      "core": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "extended": [
+        2048,
+        4096,
+        8192,
+        16384
+      ],
+      "label": "number of samples $S$"
+    }
+  },
+  "base_seed": 20240912,
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "machine": "AMD64",
+    "cpu": "Intel(R) Core(TM) i7-9850H CPU @ 2.60GHz",
+    "logical_cores": 12,
+    "physical_cores": 6,
+    "ram_gb": 15.8,
+    "cpu_mhz_max": 2592.0,
+    "on_ac_power": true,
+    "battery_percent": 100,
+    "cpu_load_percent_before": 13.9,
+    "git_commit": "a7648d678bf8017f9ad8d33c47cd57dd566e47df",
+    "git_dirty": true
+  },
+  "software": {
+    "python": "3.11.5",
+    "executable": "C:\\Users\\mrollier\\AppData\\Local\\venvs\\ca-emulators\\Scripts\\python.exe",
+    "tensorflow": "2.14.0",
+    "keras": "2.14.0",
+    "numpy": "1.26.4",
+    "cellpylib": "2.4.0",
+    "tf_default_intra_threads": 0,
+    "tf_default_inter_threads": 0,
+    "TF_ENABLE_ONEDNN_OPTS": "(unset)",
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "gpus": [],
+    "ca_emulators": "1.0.0",
+    "tf_build": {
+      "is_cuda_build": "False",
+      "is_rocm_build": "False",
+      "is_tensorrt_build": "False",
+      "msvcp_dll_names": "msvcp140.dll,msvcp140_1.dll"
+    },
+    "matplotlib": "3.8.3",
+    "numpy_config": {
+      "blas": "openblas64",
+      "lapack": "dep2270588361616"
+    }
+  },
+  "calibration_before": {
+    "numpy_matmul_256_x50_s": 0.02874,
+    "python_sum_1e6_s": 0.03244
+  },
+  "finished": "2026-09-30T07:13:57",
+  "duration_s": 28715,
+  "status_counts": {
+    "ok": 2182,
+    "skipped_predicted": 53,
+    "over_budget": 12,
+    "skipped_after_failure": 14,
+    "skipped_memory": 34
+  },
+  "calibration_after": {
+    "numpy_matmul_256_x50_s": 0.02738,
+    "python_sum_1e6_s": 0.03225
+  }
+}

@@ -15,7 +15,7 @@ results are written up in [REPORT.md](REPORT.md).
 | `run.py` | the driver: plans the jobs, runs every job in a fresh subprocess, validates, times, writes the CSV and metadata |
 | `plot.py` | figures (PNG and PDF) and a summary table (Markdown) from a results CSV |
 | `tests/` | fast pytest checks: every method equals the numpy reference; the driver's logic |
-| `REPORT.md` | the write-up (skeleton until the full run is done) |
+| `REPORT.md` | the write-up of the full run (29-30 September 2026) |
 | `results/` | `benchmark_full.csv`, `benchmark_full_meta.json`, figures, summary (after the full run) |
 | `results/raw/` | smoke runs and logs of failed jobs (ignored by git) |
 
@@ -174,7 +174,8 @@ the i7-9850H laptop, idle and on AC power:
   `lc1` at large N, and of the unrolled models at large T or N, before they
   are cut off by the budget.
 
-In total, **about 6-8 hours**. Run it overnight.
+In total, **about 6-8 hours**. Run it overnight. The run of 29-30 September
+2026 took 7 h 59 min.
 
 ### Before the full run: a quiet machine
 
