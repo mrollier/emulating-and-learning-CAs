@@ -570,7 +570,8 @@ def analyse(name: str, grid_configs: list[str] | None = None) -> list[dict]:
         plot_rule_grids(data, shown, out / "fig_rule_grid.png")
         plot_h1(data, shown, out / "fig_h1_complement_pairs.png")
     plot_time_to_exact(data, metas, shown or names[:4], out / "fig_time_to_exact.png")
-    if len({s["width"] for s in summary}) > 1 and len({s["depth"] for s in summary}) > 1:
+    if (len({s["width"] for s in summary}) > 1 and len({s["depth"] for s in summary}) > 1
+            and len({s["T"] for s in summary}) == 1):  # not across spacetime settings
         plot_width_depth(summary, out / "fig_width_depth.png")
     if len({s["T"] for s in summary}) > 1:
         plot_spacetime(summary, out / "fig_spacetime.png")

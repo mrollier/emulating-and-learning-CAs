@@ -111,6 +111,30 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     os.replace(tmp, path)
 
 
+def write_metas(out_root: Path, units: list, meta_common: dict) -> None:
+    """Write each configuration's meta.json once, before any work (or worker) starts.
+
+    Parallel workers used to write it themselves when they began a configuration,
+    so that one could read it half-written by another (a JSONDecodeError at start).
+    """
+    try:
+        from importlib.metadata import version
+
+        tf_version = version("tensorflow")
+    except Exception:  # noqa: BLE001 - only recorded, never used
+        tf_version = "unknown"
+    for cfg, size, _, n_parts in {id(u[0]): u for u in units}.values():
+        meta_path = out_root / cfg.name / "meta.json"
+        stored = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+        if stored.get("members_per_part") != size:  # new, or no part existed yet
+            meta_path.parent.mkdir(parents=True, exist_ok=True)
+            meta = {"sweep": meta_common["sweep"], "config": cfg.to_dict(),
+                    "rules": meta_common["rules"], "seeds": meta_common["seeds"],
+                    "base_seed": meta_common["base_seed"], "members_per_part": size,
+                    "n_parts": n_parts, "tensorflow": tf_version, "jit": meta_common["jit"]}
+            meta_path.write_text(json.dumps(meta, indent=1), encoding="utf-8")
+
+
 def _spawn_workers(args, argv) -> int:
     """Re-run this command as ``args.workers`` processes splitting the chunk's units."""
     import subprocess
@@ -216,6 +240,9 @@ def main(argv=None) -> int:
         print(f"{len(units)} work units; this chunk: {len(units[args.chunk[0]::args.chunk[1]])}")
         return 0
 
+    if args.worker[1] == 1:  # the parent (or a single process) writes, workers only read
+        write_metas(out_root, units, {"sweep": name, "rules": rules, "seeds": seeds,
+                                      "base_seed": base_seed, "jit": args.jit})
     if args.workers > 1:
         return _spawn_workers(args, argv)
 
@@ -251,13 +278,6 @@ def main(argv=None) -> int:
     for k, (cfg, size, p, n_parts) in enumerate(mine):
         cfg_dir = out_root / cfg.name
         cfg_dir.mkdir(parents=True, exist_ok=True)
-        meta_path = cfg_dir / "meta.json"
-        stored = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-        if stored.get("members_per_part") != size:  # new, or no part existed yet
-            meta = {"sweep": name, "config": cfg.to_dict(), "rules": rules, "seeds": seeds,
-                    "base_seed": base_seed, "members_per_part": size, "n_parts": n_parts,
-                    "tensorflow": tf.__version__, "jit": args.jit}
-            meta_path.write_text(json.dumps(meta, indent=1), encoding="utf-8")
         part_path = cfg_dir / f"part_{p:04d}.csv"
         if part_path.exists():
             log(f"({k + 1}/{len(mine)}) {cfg.name} part {p + 1}/{n_parts}: exists, skipped")
