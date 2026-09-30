@@ -23,7 +23,7 @@ the 2024 measurements, which is what makes the comparison meaningful.
 
 ```bash
 git clone https://github.com/mrollier/emulating-and-learning-CAs.git
-cd emulating-and-learning-CAs      # main (release 1.0.0 and later)
+cd emulating-and-learning-CAs      # main (release 1.0.0 and later; 1.0.1 has the benchmark and training results)
 ```
 
 A clone of the branch `cleanup/v1`, from before the 1.0.0 merge, works as well; push

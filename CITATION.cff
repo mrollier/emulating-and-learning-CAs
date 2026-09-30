@@ -13,8 +13,8 @@ authors:
     affiliation: Ghent University
 repository-code: "https://github.com/mrollier/emulating-and-learning-CAs"
 license: MIT
-version: 1.0.0
-date-released: 2026-09-29
+version: 1.0.1
+date-released: 2026-09-30
 keywords:
   - cellular automata
   - non-uniform cellular automata

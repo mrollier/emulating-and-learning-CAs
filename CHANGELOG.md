@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 (2026-09-30)
 
-Results only; the package is unchanged.
+Results and documentation; the package code is unchanged apart from its version number.
 
 - **Benchmark** (`experiments/benchmarks`): the full CPU run (2,295 jobs, all timed
   outputs exact) and its report. The CNN "fixed cost" of Fig. 5 is `model.predict`

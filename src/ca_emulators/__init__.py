@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import tensorflow as tf
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 _keras_version = getattr(tf.keras, "__version__", "2")
 if int(_keras_version.split(".")[0]) >= 3:
